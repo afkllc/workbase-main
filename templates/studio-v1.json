@@ -1,0 +1,129 @@
+{
+  "key": "studio-v1",
+  "name": "Studio Template",
+  "version": "1.0.0",
+  "property_type": "Studio",
+  "rooms": [
+    {
+      "key": "main_room",
+      "name": "Main Room",
+      "display_order": 1,
+      "is_required": true,
+      "items": [
+        {
+          "key": "main_room_walls",
+          "name": "Walls and Ceiling",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 3,
+          "guidance_note": "Record general decoration and visible defects.",
+          "ai_hints": ["wall", "ceiling", "paint"]
+        },
+        {
+          "key": "main_room_floor",
+          "name": "Flooring",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": false,
+          "max_photos": 2,
+          "guidance_note": "Record wear and stains.",
+          "ai_hints": ["floor", "carpet", "laminate"]
+        },
+        {
+          "key": "main_room_window",
+          "name": "Window",
+          "display_order": 3,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": false,
+          "max_photos": 2,
+          "guidance_note": "Record glazing and frame condition.",
+          "ai_hints": ["window", "blind", "curtain"]
+        }
+      ]
+    },
+    {
+      "key": "kitchenette",
+      "name": "Kitchenette",
+      "display_order": 2,
+      "is_required": true,
+      "items": [
+        {
+          "key": "kitchenette_units",
+          "name": "Units and Doors",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record finish, alignment and handles.",
+          "ai_hints": ["cupboard", "cabinet", "unit"]
+        },
+        {
+          "key": "kitchenette_sink",
+          "name": "Kitchen Sink",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record taps, sealant and limescale.",
+          "ai_hints": ["sink", "tap", "drainer"]
+        }
+      ]
+    },
+    {
+      "key": "bathroom",
+      "name": "Bathroom",
+      "display_order": 3,
+      "is_required": true,
+      "items": [
+        {
+          "key": "bathroom_basin",
+          "name": "Wash Basin",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record taps, sealant and wear.",
+          "ai_hints": ["basin", "sink", "tap"]
+        },
+        {
+          "key": "bathroom_toilet",
+          "name": "Toilet",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record seat, flush and cleanliness.",
+          "ai_hints": ["toilet", "wc"]
+        }
+      ]
+    }
+  ],
+  "optional_rooms": [],
+  "fixed_sections": {
+    "meter_readings": {
+      "types": ["gas", "electric", "water"],
+      "photo_required": true,
+      "ai_enabled": true
+    },
+    "keys_and_fobs": {
+      "common_items": ["Front door key", "Back door key", "Mailbox key", "Window key"]
+    },
+    "general_observations": {
+      "checklist": [
+        {
+          "key": "smoke_alarms",
+          "name": "Smoke Alarm(s)",
+          "type": "boolean_with_note",
+          "guidance": "Record whether alarms are present and working."
+        },
+        {
+          "key": "overall_cleanliness",
+          "name": "Overall Cleanliness",
+          "type": "rating",
+          "options": ["professional_clean", "good", "fair", "poor"]
+        }
+      ]
+    }
+  }
+}

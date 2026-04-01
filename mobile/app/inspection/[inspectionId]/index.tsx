@@ -1,0 +1,206 @@
+import Feather from '@expo/vector-icons/Feather';
+import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
+import {useCallback, useEffect, useState} from 'react';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {StatusSummaryRow} from '../../../src/components/StatusSummaryRow';
+import {Button, Card, LoadingRow, Notice, Screen} from '../../../src/components/ui';
+import {getInspection} from '../../../src/lib/api';
+import type {InspectionRecord} from '../../../src/lib/types';
+import {formatDisplayName} from '../../../src/lib/utils';
+import {AppStackScreen} from '../../../src/navigation/AppStackScreen';
+import {borders, colours, radii, spacing, surfaces, typography, withAlpha} from '../../../src/theme';
+
+export default function InspectionScreen() {
+  const router = useRouter();
+  const {inspectionId, from} = useLocalSearchParams<{inspectionId: string; from?: string}>();
+  const [inspection, setInspection] = useState<InspectionRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreatedBanner, setShowCreatedBanner] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function load() {
+        if (!inspectionId) {
+          return;
+        }
+
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await getInspection(inspectionId);
+          if (isActive) {
+            setInspection(data);
+          }
+        } catch (err) {
+          if (isActive) {
+            setError(err instanceof Error ? err.message : 'Failed to load inspection.');
+          }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
+        }
+      }
+
+      void load();
+      return () => {
+        isActive = false;
+      };
+    }, [inspectionId]),
+  );
+
+  useEffect(() => {
+    setShowCreatedBanner(from === 'new');
+  }, [from, inspectionId]);
+
+  const confirmed = inspection?.rooms.reduce((count, room) => count + room.items_confirmed, 0) ?? 0;
+  const total = inspection?.rooms.reduce((count, room) => count + room.items_total, 0) ?? 0;
+  const completion = total > 0 ? (confirmed / total) * 100 : 0;
+
+  function dismissCreatedBanner() {
+    setShowCreatedBanner(false);
+  }
+
+  return (
+    <>
+      <AppStackScreen fallbackBackLabel="Inspections" fallbackHref="/inspections" inspection={inspection} title="Inspection" />
+      <Screen includeTopInset={false} onScrollBeginDrag={showCreatedBanner ? dismissCreatedBanner : undefined} showHeader={false}>
+        {error ? <Notice>{error}</Notice> : null}
+        {loading ? <LoadingRow label="Loading inspection" /> : null}
+
+        {inspection ? (
+          <>
+            {showCreatedBanner ? (
+              <View style={styles.creationBanner}>
+                <Text style={styles.creationBannerTitle}>New inspection created</Text>
+                <Text style={styles.creationBannerCopy}>Open a room below to start capturing.</Text>
+              </View>
+            ) : null}
+
+            <Card>
+              <Text style={styles.kicker}>{formatDisplayName(inspection.property_type)}</Text>
+              <StatusSummaryRow subtitle={inspection.inspection_date} statusValue={inspection.status} title={inspection.property_address} />
+
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Progress</Text>
+                <Text style={styles.progressValue}>{confirmed} of {total} confirmed</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, {width: `${completion}%`}]} />
+              </View>
+              {inspection.rooms.length > 0 && completion < 100 ? <Text style={styles.guidanceCopy}>Open a room below to continue capturing items.</Text> : null}
+
+              <View style={styles.actionRow}>
+                <Button label="Property details" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} />
+                <Button label="Open review" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
+              </View>
+            </Card>
+
+            {inspection.rooms.map((room) => (
+              <Pressable
+                key={room.id}
+                onPress={() => {
+                  dismissCreatedBanner();
+                  router.push(`/inspection/${inspection.id}/room/${room.id}`);
+                }}
+                style={({pressed}) => [styles.roomCard, pressed ? styles.roomCardPressed : null]}
+              >
+                <StatusSummaryRow
+                  subtitle={`${room.items_confirmed} of ${room.items_total} items confirmed`}
+                  statusValue={room.status}
+                  title={room.name}
+                />
+                <View style={styles.roomFooter}>
+                  <Text style={styles.roomAction}>Open room</Text>
+                  <Feather color={colours.primary} name="chevron-right" size={18} />
+                </View>
+              </Pressable>
+            ))}
+          </>
+        ) : null}
+      </Screen>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  creationBanner: {
+    borderRadius: radii.card,
+    borderWidth: 1,
+    borderColor: borders.primary,
+    backgroundColor: surfaces.primarySoft,
+    padding: spacing.cardPadding,
+    gap: 4,
+  },
+  creationBannerTitle: {
+    ...typography.cardTitle,
+    color: colours.textPrimary,
+  },
+  creationBannerCopy: {
+    ...typography.body,
+    color: colours.textSecondary,
+  },
+  kicker: {
+    ...typography.label,
+    color: colours.primary,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.tightGap,
+  },
+  progressLabel: {
+    ...typography.label,
+    color: colours.textSecondary,
+  },
+  progressValue: {
+    ...typography.supporting,
+    color: colours.textPrimary,
+    fontWeight: '700',
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: radii.badge,
+    backgroundColor: surfaces.neutralSoft,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 10,
+    borderRadius: radii.badge,
+    backgroundColor: colours.primary,
+  },
+  guidanceCopy: {
+    ...typography.body,
+    color: colours.textSecondary,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.tightGap,
+  },
+  roomCard: {
+    borderRadius: radii.card,
+    borderWidth: 1,
+    borderColor: borders.subtle,
+    backgroundColor: colours.surface,
+    padding: spacing.cardPadding,
+    gap: spacing.compactGap,
+  },
+  roomCardPressed: {
+    backgroundColor: withAlpha(colours.primary, 0.05),
+  },
+  roomFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+  },
+  roomAction: {
+    ...typography.supporting,
+    color: colours.primary,
+    fontWeight: '700',
+  },
+});

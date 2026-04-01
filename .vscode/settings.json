@@ -1,0 +1,14 @@
+{
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.defaultLocation": "view",
+    "terminal.integrated.tabs.hideCondition": "singleTerminal",
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/.venv": true,
+        "**/.expo": true,
+        "**/dist": true,
+        "**/dist-export-check": true,
+        "**/__pycache__": true
+    }
+}

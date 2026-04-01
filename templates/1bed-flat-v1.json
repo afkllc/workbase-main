@@ -1,0 +1,175 @@
+{
+  "key": "1bed-flat-v1",
+  "name": "1-Bed Flat Template",
+  "version": "1.0.0",
+  "property_type": "1-Bed Flat",
+  "rooms": [
+    {
+      "key": "entrance_hall",
+      "name": "Entrance Hall",
+      "display_order": 1,
+      "is_required": true,
+      "items": [
+        {
+          "key": "hall_door",
+          "name": "Entrance Door",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record finish, lock and handle condition.",
+          "ai_hints": ["door", "front door", "handle", "lock"]
+        },
+        {
+          "key": "hall_walls",
+          "name": "Walls",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": false,
+          "max_photos": 2,
+          "guidance_note": "Record marks and scuffs.",
+          "ai_hints": ["wall", "paint", "scuff"]
+        }
+      ]
+    },
+    {
+      "key": "living_room",
+      "name": "Living Room",
+      "display_order": 2,
+      "is_required": true,
+      "items": [
+        {
+          "key": "living_walls",
+          "name": "Walls and Ceiling",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 3,
+          "guidance_note": "Record general decoration and visible defects.",
+          "ai_hints": ["wall", "ceiling", "paint"]
+        },
+        {
+          "key": "living_floor",
+          "name": "Flooring",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": false,
+          "max_photos": 2,
+          "guidance_note": "Record wear and stains.",
+          "ai_hints": ["floor", "carpet", "laminate"]
+        }
+      ]
+    },
+    {
+      "key": "kitchen",
+      "name": "Kitchen",
+      "display_order": 3,
+      "is_required": true,
+      "items": [
+        {
+          "key": "kitchen_units",
+          "name": "Units and Doors",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record finish, alignment and handles.",
+          "ai_hints": ["cupboard", "cabinet", "unit"]
+        },
+        {
+          "key": "kitchen_sink",
+          "name": "Kitchen Sink",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record taps, sealant and limescale.",
+          "ai_hints": ["sink", "tap", "drainer"]
+        }
+      ]
+    },
+    {
+      "key": "bedroom_1",
+      "name": "Bedroom 1",
+      "display_order": 4,
+      "is_required": true,
+      "items": [
+        {
+          "key": "bedroom_1_walls",
+          "name": "Walls and Ceiling",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record general condition and visible marks.",
+          "ai_hints": ["wall", "ceiling", "bedroom wall"]
+        },
+        {
+          "key": "bedroom_1_floor",
+          "name": "Flooring",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": false,
+          "max_photos": 2,
+          "guidance_note": "Record wear and stains.",
+          "ai_hints": ["floor", "carpet", "laminate"]
+        }
+      ]
+    },
+    {
+      "key": "bathroom",
+      "name": "Bathroom",
+      "display_order": 5,
+      "is_required": true,
+      "items": [
+        {
+          "key": "bathroom_basin",
+          "name": "Wash Basin",
+          "display_order": 1,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record taps, sealant and wear.",
+          "ai_hints": ["basin", "sink", "tap"]
+        },
+        {
+          "key": "bathroom_toilet",
+          "name": "Toilet",
+          "display_order": 2,
+          "condition_options": ["good", "fair", "poor", "damaged"],
+          "photo_required": true,
+          "max_photos": 2,
+          "guidance_note": "Record seat, flush and cleanliness.",
+          "ai_hints": ["toilet", "wc"]
+        }
+      ]
+    }
+  ],
+  "optional_rooms": [],
+  "fixed_sections": {
+    "meter_readings": {
+      "types": ["gas", "electric", "water"],
+      "photo_required": true,
+      "ai_enabled": true
+    },
+    "keys_and_fobs": {
+      "common_items": ["Front door key", "Back door key", "Mailbox key", "Window key"]
+    },
+    "general_observations": {
+      "checklist": [
+        {
+          "key": "smoke_alarms",
+          "name": "Smoke Alarm(s)",
+          "type": "boolean_with_note",
+          "guidance": "Record whether alarms are present and working."
+        },
+        {
+          "key": "overall_cleanliness",
+          "name": "Overall Cleanliness",
+          "type": "rating",
+          "options": ["professional_clean", "good", "fair", "poor"]
+        }
+      ]
+    }
+  }
+}
