@@ -1,11 +1,12 @@
 import Feather from '@expo/vector-icons/Feather';
 import Constants from 'expo-constants';
 import {StyleSheet, Text, View} from 'react-native';
+import appPackage from '../../package.json';
 import {Card, Screen} from '../components/ui';
 import {borders, colours, radii, spacing, surfaces, typography} from '../theme';
 
 export default function SettingsScreen() {
-  const version = Constants.expoConfig?.version ?? '1.0.0';
+  const version = appPackage.version ?? Constants.expoConfig?.extra?.appVersion ?? Constants.expoConfig?.version ?? '1.0.0';
 
   return (
     <Screen title="Settings" subtitle="App details and support information for field work.">

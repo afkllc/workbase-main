@@ -84,7 +84,7 @@ export function getInspection(inspectionId: string) {
   return request<InspectionRecord>(`/api/inspections/${inspectionId}`);
 }
 
-async function buildPhotoFormData(asset: ImagePicker.ImagePickerAsset): Promise<FormData> {
+async function buildPhotoFormData(asset: ImagePicker.ImagePickerAsset, itemId?: string): Promise<FormData> {
   const formData = new FormData();
   const fileName = asset.fileName ?? 'capture.jpg';
   const mimeType = asset.mimeType ?? 'image/jpeg';
@@ -105,11 +105,15 @@ async function buildPhotoFormData(asset: ImagePicker.ImagePickerAsset): Promise<
     } as unknown as Blob);
   }
 
+  if (itemId) {
+    formData.append('item_id', itemId);
+  }
+
   return formData;
 }
 
-export async function analysePhoto(inspectionId: string, roomId: string, asset: ImagePicker.ImagePickerAsset) {
-  const formData = await buildPhotoFormData(asset);
+export async function analysePhoto(inspectionId: string, roomId: string, asset: ImagePicker.ImagePickerAsset, itemId?: string) {
+  const formData = await buildPhotoFormData(asset, itemId);
 
   return request<AnalysisSuggestion>(`/api/inspections/${inspectionId}/rooms/${roomId}/analyse-photo`, {
     method: 'POST',

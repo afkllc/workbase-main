@@ -50,6 +50,7 @@ class ItemRecord(BaseModel):
     id: str
     key: str
     name: str
+    photo_required: bool = False
     condition: Condition | None = None
     description: str = ""
     ai_confidence: Confidence | None = None

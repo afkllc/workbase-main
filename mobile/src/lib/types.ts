@@ -43,6 +43,7 @@ export interface ItemRecord {
   id: string;
   key: string;
   name: string;
+  photo_required: boolean;
   condition: Condition | null;
   description: string;
   ai_confidence: 'high' | 'medium' | 'low' | null;

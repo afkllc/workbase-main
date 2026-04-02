@@ -212,7 +212,15 @@ class InspectionStore:
             raise HTTPException(status_code=404, detail=f"Inspection '{inspection_id}' not found")
         return InspectionRecord.model_validate(json.loads(row["payload_json"]))
 
-    def analyse_photo(self, inspection_id: str, room_id: str, file_name: str, *, ai_provider: AIProvider) -> AnalysisSuggestion:
+    def analyse_photo(
+        self,
+        inspection_id: str,
+        room_id: str,
+        file_name: str,
+        *,
+        ai_provider: AIProvider,
+        item_id: str | None = None,
+    ) -> AnalysisSuggestion:
         inspection = self.get_inspection(inspection_id)
         room = self._get_room(inspection, room_id)
         room.status = "capturing"
@@ -225,7 +233,11 @@ class InspectionStore:
         template = self.get_template(inspection.template_key)
         template_room = next(room_schema for room_schema in [*template.rooms, *template.optional_rooms] if room_schema.key == room.key)
         template_items = {item.key: item for item in template_room.items}
-        item = self._pick_item(file_name=file_name, pending_items=pending_items, template_items=template_items)
+        item = next((candidate for candidate in room.items if candidate.id == item_id), None) if item_id else None
+        if item_id and not item:
+            raise HTTPException(status_code=404, detail=f"Item '{item_id}' not found")
+        if not item:
+            item = self._pick_item(file_name=file_name, pending_items=pending_items, template_items=template_items)
         template_item = template_items.get(item.key) or TemplateItem(
             key=item.key,
             name=item.name,
@@ -333,6 +345,7 @@ class InspectionStore:
                 id=self._new_id("item"),
                 key=item.key,
                 name=item.name,
+                photo_required=item.photo_required,
             )
             for item in room.items
         ]

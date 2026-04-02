@@ -123,6 +123,54 @@ transition as the primary benchmark.
 
 ---
 
+## Field-Mode / Capture Deferrals
+
+### [mobile] Room sweep mode for batch capture
+
+**Detail:** Let inspectors capture a small batch of room photos in one
+pass, then have AI propose multiple item updates together. This could
+make the flow even more "bang, bang, done" for experienced users, but it
+is a larger workflow change and should only be explored after the
+single-item rapid capture loop is validated in the demo.
+
+---
+
+### [mobile] Optional quick issue shortcuts after capture
+
+**Detail:** Test a compact shortcut row such as `Good`, `Issue`, and
+`N/A` immediately after capture for users who want explicit control
+without opening a full review UI. This is promising, but it should only
+be added if rapid auto-save plus compact exception review still feels too
+slow in live feedback.
+
+---
+
+### [mobile] Voice notes or dictation for defect descriptions
+
+**Detail:** Allow inspectors to speak a short note and attach it to the
+item description during review. This could be valuable for complex
+findings, but it is not necessary to prove the MVP field workflow.
+
+---
+
+### [mobile] Field-tool haptics and richer capture feedback
+
+**Detail:** Add haptics, shutter-style feedback, and stronger save
+signals so capture feels more like operating a tool than filling out a
+form. Good experience leverage, but not essential for the internal demo.
+
+---
+
+### [mobile] Dedicated field-mode shell
+
+**Detail:** Create a more clearly separated field-work shell that makes
+inspection capture feel distinct from admin and reporting flows through
+layout, navigation emphasis, and visual treatment. Important long-term,
+but too structural for the MVP unless the lighter field-mode refresh is
+insufficient.
+
+---
+
 ## Product / Infrastructure Deferrals
 
 - Live AI provider (Groq) — switch via `AI_PROVIDER=groq` + `GROQ_API_KEY`

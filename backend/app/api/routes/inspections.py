@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.dependencies import get_ai_provider, get_store
 from app.schemas.domain import (
@@ -55,10 +55,11 @@ async def analyse_photo(
     inspection_id: str,
     room_id: str,
     photo: UploadFile = File(...),
+    item_id: str | None = Form(None),
     ai_provider: AIProvider = Depends(get_ai_provider),
     store: InspectionStore = Depends(get_store),
 ):
-    return store.analyse_photo(inspection_id, room_id, photo.filename or "capture.jpg", ai_provider=ai_provider)
+    return store.analyse_photo(inspection_id, room_id, photo.filename or "capture.jpg", ai_provider=ai_provider, item_id=item_id)
 
 
 @router.post("/{inspection_id}/rooms/{room_id}/video-scan", response_model=InspectionRecord)
