@@ -29,6 +29,7 @@ export interface ItemRecord {
   id: string;
   key: string;
   name: string;
+  photo_required: boolean;
   condition: Condition | null;
   description: string;
   ai_confidence: 'high' | 'medium' | 'low' | null;
@@ -81,6 +82,9 @@ export interface InspectionRecord {
   status: InspectionStatus;
   rooms: RoomRecord[];
   sections: InspectionSections;
+  sections_completed: boolean;
+  is_archived: boolean;
+  archived_at: string | null;
   report_url: string | null;
 }
 
@@ -94,6 +98,8 @@ export interface InspectionSummary {
   rooms_count: number;
   confirmed_items: number;
   total_items: number;
+  is_archived: boolean;
+  archived_at: string | null;
   report_url: string | null;
 }
 

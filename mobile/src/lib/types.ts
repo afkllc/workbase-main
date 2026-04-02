@@ -97,6 +97,8 @@ export interface InspectionRecord {
   rooms: RoomRecord[];
   sections: InspectionSections;
   sections_completed: boolean;
+  is_archived: boolean;
+  archived_at: string | null;
   report_url: string | null;
 }
 
@@ -110,8 +112,8 @@ export interface InspectionSummary {
   rooms_count: number;
   confirmed_items: number;
   total_items: number;
-  is_archived?: boolean;
-  archived_at?: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
   report_url: string | null;
 }
 

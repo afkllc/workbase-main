@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, status
 
 from app.dependencies import get_store
 from app.schemas.domain import CreateTemplateRequest, TemplateSchema, TemplateSummary, UpdateTemplateRequest
@@ -30,9 +30,3 @@ def update_template(
     store: InspectionStore = Depends(get_store),
 ):
     return store.update_template(template_key, payload)
-
-
-@router.delete("/{template_key}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_template(template_key: str, store: InspectionStore = Depends(get_store)):
-    store.delete_template(template_key)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

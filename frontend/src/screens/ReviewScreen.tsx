@@ -38,6 +38,7 @@ export function ReviewScreen({
   const [filterNeedsReview, setFilterNeedsReview] = useState(true);
   const hasNoChecklistItems = totalItems === 0;
   const needsReviewCount = Math.max(totalItems - totalConfirmed, 0);
+  const reportReady = allItemsConfirmed && inspection.sections_completed;
 
   const allConfirmableItems = useMemo(() => {
     const items: Array<{roomId: string; itemId: string; condition: Condition; description: string; photoName?: string}> = [];
@@ -81,9 +82,17 @@ export function ReviewScreen({
               <h2 className="mt-1 text-xl font-semibold text-slate-950">
                 {hasNoChecklistItems ? 'No checklist items required' : `${totalConfirmed} of ${totalItems} items confirmed`}
               </h2>
-              {hasNoChecklistItems ? (
+              {hasNoChecklistItems && !inspection.sections_completed ? (
+                <p className="mt-1 text-sm font-medium text-amber-600">
+                  Save the fixed sections before generating the report.
+                </p>
+              ) : hasNoChecklistItems ? (
                 <p className="mt-1 text-sm font-medium text-emerald-600">
                   This testing template has no checklist items, so the report can be generated immediately.
+                </p>
+              ) : !inspection.sections_completed ? (
+                <p className="mt-1 text-sm font-medium text-amber-600">
+                  Save the fixed sections before generating the report.
                 </p>
               ) : needsReviewCount > 0 ? (
                 <p className="mt-1 text-sm font-medium text-amber-600">{needsReviewCount} items need review</p>
@@ -91,8 +100,8 @@ export function ReviewScreen({
                 <p className="mt-1 text-sm font-medium text-emerald-600">Everything is confirmed and ready for report generation.</p>
               )}
             </div>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill(allItemsConfirmed ? 'ready' : 'review')}`}>
-              {allItemsConfirmed ? 'Ready' : 'Needs review'}
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill(reportReady ? 'ready' : 'review')}`}>
+              {reportReady ? 'Ready' : 'Needs review'}
             </span>
           </div>
           {!hasNoChecklistItems ? (
@@ -207,7 +216,7 @@ export function ReviewScreen({
         <button
           type="button"
           onClick={onGenerate}
-          disabled={!allItemsConfirmed || saving}
+          disabled={!reportReady || saving}
           className="wb-btn-dark w-full"
         >
           {saving ? <LoaderCircle className="animate-spin" size={18} /> : <FileText size={18} />}

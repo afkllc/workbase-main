@@ -325,9 +325,38 @@ class InspectionStore:
         self._save_inspection(inspection)
         return inspection
 
+    def archive_report(self, inspection_id: str) -> InspectionRecord:
+        inspection = self.get_inspection(inspection_id)
+        if inspection.status != "completed" or not inspection.report_url:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Only completed inspections with generated reports can be archived",
+            )
+
+        inspection.is_archived = True
+        if inspection.archived_at is None:
+            inspection.archived_at = datetime.utcnow()
+        self._save_inspection(inspection)
+        return inspection
+
     def generate_report(self, inspection_id: str, *, ai_provider: AIProvider) -> InspectionRecord:
         inspection = self.get_inspection(inspection_id)
+        if not inspection.sections_completed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Fixed sections must be completed before generating the report",
+            )
+
+        pending_items = [item for room in inspection.rooms for item in room.items if not item.is_confirmed]
+        if pending_items:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="All checklist items must be confirmed before generating the report",
+            )
+
         inspection.status = "processing"
+        inspection.is_archived = False
+        inspection.archived_at = None
         inspection.report_url = self._reports.generate(inspection, ai_provider)
         inspection.status = "completed"
         self._save_inspection(inspection)
@@ -532,6 +561,8 @@ class InspectionStore:
             rooms_count=len(inspection.rooms),
             confirmed_items=confirmed_items,
             total_items=total_items,
+            is_archived=inspection.is_archived,
+            archived_at=inspection.archived_at,
             report_url=inspection.report_url,
         )
 

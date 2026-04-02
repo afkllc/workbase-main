@@ -111,6 +111,8 @@ class InspectionRecord(BaseModel):
     rooms: list[RoomRecord]
     sections: InspectionSections = Field(default_factory=InspectionSections)
     sections_completed: bool = False
+    is_archived: bool = False
+    archived_at: datetime | None = None
     report_url: str | None = None
 
 
@@ -133,6 +135,8 @@ class InspectionSummary(BaseModel):
     rooms_count: int
     confirmed_items: int
     total_items: int
+    is_archived: bool = False
+    archived_at: datetime | None = None
     report_url: str | None = None
 
 

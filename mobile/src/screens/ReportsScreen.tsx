@@ -27,7 +27,7 @@ export default function ReportsScreen() {
         try {
           const data = await listInspections();
           if (isActive) {
-            setReports(data.filter((item) => item.status === 'completed' && !item.is_archived && !item.archived_at));
+            setReports(data.filter((item) => item.status === 'completed' && !item.is_archived));
           }
         } catch (err) {
           if (isActive) {
@@ -212,12 +212,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.badge,
     alignItems: 'center',
     justifyContent: 'center',
-    display: 'none' // this is intentional, I want the archive feature to be hidden in MVP
   },
   archiveButtonPressed: {
     backgroundColor: withAlpha(colours.textSecondary, 0.08),
     transform: [{ scale: 0.95 }],
-    display: 'none'
   },
   linkButton: {
     alignSelf: 'flex-start',

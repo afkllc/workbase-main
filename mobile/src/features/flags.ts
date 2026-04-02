@@ -1,3 +1,3 @@
 export const featureFlags = {
-  videoScan: false,
+  videoScan: true,
 } as const;

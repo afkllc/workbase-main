@@ -274,7 +274,7 @@ export default function App() {
     }
   }
 
-  const completedReports = inspections.filter((entry) => entry.status === 'completed');
+  const completedReports = inspections.filter((entry) => entry.status === 'completed' && !entry.is_archived);
   const stageKey = `${screen}:${inspection?.id ?? 'none'}:${selectedRoomId ?? 'none'}`;
 
   let screenContent: JSX.Element | null = null;

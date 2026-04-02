@@ -145,16 +145,16 @@ export function resetItem(inspectionId: string, roomId: string, itemId: string) 
   });
 }
 
+export function runVideoScan(inspectionId: string, roomId: string) {
+  return request<InspectionRecord>(`/api/inspections/${inspectionId}/rooms/${roomId}/video-scan`, {
+    method: 'POST',
+  });
+}
+
 export function updateSections(inspectionId: string, payload: UpdateSectionsPayload) {
   return request<InspectionRecord>(`/api/inspections/${inspectionId}/sections`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
-  });
-}
-
-export function runVideoScan(inspectionId: string, roomId: string) {
-  return request<InspectionRecord>(`/api/inspections/${inspectionId}/rooms/${roomId}/video-scan`, {
-    method: 'POST',
   });
 }
 

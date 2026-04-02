@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     left: '50%',
     width: layout.centerActionSize,
     height: layout.centerActionSize,
-    marginLeft: -(layout.centerActionSize / 2),
+    marginLeft: -(layout.centerActionSize / 3),
     borderRadius: radii.badge,
     backgroundColor: colours.primary,
     alignItems: 'center',

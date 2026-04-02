@@ -78,8 +78,6 @@ function getRouteLabel(route: RouteLike | undefined, inspection: InspectionRecor
       return 'Settings';
     case 'new-inspection':
       return 'New Inspection';
-    case 'template-builder':
-      return 'Template Builder';
     case 'inspection/[inspectionId]':
       return 'Inspection';
     case 'inspection/[inspectionId]/sections':
@@ -89,10 +87,6 @@ function getRouteLabel(route: RouteLike | undefined, inspection: InspectionRecor
     case 'inspection/[inspectionId]/room/[roomId]': {
       const roomName = getRoomName(inspection, getParamString(focusedRoute, 'roomId'));
       return roomName ? `${roomName} - Capture` : 'Room Capture';
-    }
-    case 'inspection/[inspectionId]/room/[roomId]/video-scan': {
-      const roomName = getRoomName(inspection, getParamString(focusedRoute, 'roomId'));
-      return roomName ? `${roomName} - Video Scan` : 'Video Scan';
     }
     default:
       return null;
