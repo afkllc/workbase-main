@@ -50,6 +50,16 @@ def update_item(
     return store.update_item(inspection_id, room_id, payload)
 
 
+@router.post("/{inspection_id}/rooms/{room_id}/items/{item_id}/reset", response_model=InspectionRecord)
+def reset_item(
+    inspection_id: str,
+    room_id: str,
+    item_id: str,
+    store: InspectionStore = Depends(get_store),
+):
+    return store.reset_item(inspection_id, room_id, item_id)
+
+
 @router.post("/{inspection_id}/rooms/{room_id}/analyse-photo", response_model=AnalysisSuggestion)
 async def analyse_photo(
     inspection_id: str,

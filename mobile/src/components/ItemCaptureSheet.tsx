@@ -14,6 +14,8 @@ import {Button, Notice} from './ui';
 type CaptureState = 'idle' | 'uploading' | 'analysing' | 'review' | 'confirmed';
 type SheetCondition = Extract<Condition, 'good' | 'fair' | 'poor' | 'na'>;
 
+export type ItemCaptureSheetMode = 'fallback' | 'manual_review' | 'edit';
+
 export type ItemCaptureConfirmPayload = {
   itemId: string;
   condition: Condition;
@@ -26,10 +28,14 @@ type ItemCaptureSheetProps = {
   item: ItemRecord;
   inspectionId: string;
   roomId: string;
+  mode: ItemCaptureSheetMode;
   onConfirm: (payload: ItemCaptureConfirmPayload) => void;
   onDismiss: () => void;
   initialAsset?: ImagePicker.ImagePickerAsset;
   initialError?: string | null;
+  initialCondition?: Condition | null;
+  initialDescription?: string;
+  initialPhotoName?: string;
 };
 
 const SHEET_SNAP_POINTS: Array<string | number> = ['50%', '92%'];
@@ -52,38 +58,37 @@ export function ItemCaptureSheet({
   item,
   inspectionId,
   roomId,
+  mode,
   onConfirm,
   onDismiss,
   initialAsset,
   initialError = null,
+  initialCondition,
+  initialDescription,
+  initialPhotoName,
 }: ItemCaptureSheetProps) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const requestIdRef = useRef(0);
   const isClosingRef = useRef(false);
-  const [captureState, setCaptureState] = useState<CaptureState>(initialAsset ? 'uploading' : 'idle');
+  const [captureState, setCaptureState] = useState<CaptureState>(mode === 'fallback' ? 'idle' : 'review');
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(initialAsset ?? null);
-  const [conditionDraft, setConditionDraft] = useState<SheetCondition>(normaliseCondition(item.condition));
-  const [descriptionDraft, setDescriptionDraft] = useState(item.description);
+  const [conditionDraft, setConditionDraft] = useState<SheetCondition>(normaliseCondition(initialCondition ?? item.condition));
+  const [descriptionDraft, setDescriptionDraft] = useState(initialDescription ?? item.description);
   const [errorMessage, setErrorMessage] = useState<string | null>(initialError);
-  const [analysisSucceeded, setAnalysisSucceeded] = useState(false);
-  const [photoName, setPhotoName] = useState<string | undefined>(initialAsset?.fileName ?? undefined);
+  const [analysisSucceeded, setAnalysisSucceeded] = useState(mode === 'edit' && item.source === 'photo_ai');
+  const [photoName, setPhotoName] = useState<string | undefined>(initialPhotoName ?? initialAsset?.fileName ?? undefined);
 
   const isBusy = captureState === 'uploading' || captureState === 'analysing';
   const canSkipPhoto = !item.photo_required;
+  const initialIndex = mode === 'fallback' ? 0 : 1;
 
   useEffect(() => {
     isClosingRef.current = false;
-
-    if (initialAsset) {
-      void startAnalysis(initialAsset);
-    }
 
     return () => {
       isClosingRef.current = true;
       requestIdRef.current += 1;
     };
-    // The component is keyed by the active capture session, so mount-time bootstrap is enough.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function renderBackdrop(props: BottomSheetBackdropProps) {
@@ -100,17 +105,27 @@ export function ItemCaptureSheet({
     onDismiss();
   }
 
-  function resetForManualReview(message: string | null, asset?: ImagePicker.ImagePickerAsset) {
-    if (asset) {
-      setSelectedAsset(asset);
-      setPhotoName(asset.fileName ?? 'capture.jpg');
+  function seedReviewDraft(params?: {
+    asset?: ImagePicker.ImagePickerAsset;
+    condition?: Condition | null;
+    description?: string;
+    photoName?: string;
+    error?: string | null;
+    analysisSucceeded?: boolean;
+  }) {
+    if (params?.asset) {
+      setSelectedAsset(params.asset);
+    }
+    if (params?.photoName !== undefined) {
+      setPhotoName(params.photoName);
     }
 
-    setAnalysisSucceeded(false);
-    setErrorMessage(message);
-    setConditionDraft(normaliseCondition(item.condition));
-    setDescriptionDraft(item.description);
+    setConditionDraft(normaliseCondition(params?.condition ?? initialCondition ?? item.condition));
+    setDescriptionDraft(params?.description ?? initialDescription ?? item.description);
+    setAnalysisSucceeded(params?.analysisSucceeded ?? false);
+    setErrorMessage(params?.error ?? null);
     setCaptureState('review');
+    bottomSheetRef.current?.snapToIndex(1);
   }
 
   async function startAnalysis(asset: ImagePicker.ImagePickerAsset) {
@@ -121,11 +136,8 @@ export function ItemCaptureSheet({
     setPhotoName(asset.fileName ?? 'capture.jpg');
     setAnalysisSucceeded(false);
     setErrorMessage(null);
-    setConditionDraft(normaliseCondition(item.condition));
-    setDescriptionDraft(item.description);
     setCaptureState('uploading');
     bottomSheetRef.current?.snapToIndex(1);
-
     setCaptureState('analysing');
 
     try {
@@ -134,17 +146,24 @@ export function ItemCaptureSheet({
         return;
       }
 
-      setConditionDraft(normaliseCondition(analysis.condition));
-      setDescriptionDraft(analysis.description);
-      setPhotoName(analysis.photo_name);
-      setAnalysisSucceeded(true);
-      setCaptureState('review');
+      seedReviewDraft({
+        asset,
+        condition: analysis.condition,
+        description: analysis.description,
+        photoName: analysis.photo_name,
+        analysisSucceeded: true,
+      });
     } catch (error) {
       if (isClosingRef.current || requestId !== requestIdRef.current) {
         return;
       }
 
-      resetForManualReview(error instanceof Error ? error.message : 'AI analysis failed. You can continue manually.', asset);
+      seedReviewDraft({
+        asset,
+        photoName: asset.fileName ?? 'capture.jpg',
+        error: error instanceof Error ? error.message : 'AI analysis failed. You can continue manually.',
+        analysisSucceeded: false,
+      });
     }
   }
 
@@ -199,7 +218,12 @@ export function ItemCaptureSheet({
   }
 
   function handleConfirm() {
-    const source: Extract<ItemSource, 'manual' | 'photo_ai'> = selectedAsset && analysisSucceeded ? 'photo_ai' : 'manual';
+    let source: Extract<ItemSource, 'manual' | 'photo_ai'> = 'manual';
+    if (selectedAsset && analysisSucceeded) {
+      source = 'photo_ai';
+    } else if (mode === 'edit' && item.source === 'photo_ai') {
+      source = 'photo_ai';
+    }
 
     setCaptureState('confirmed');
     onConfirm({
@@ -271,9 +295,17 @@ export function ItemCaptureSheet({
   }
 
   function renderReviewState() {
+    const supportingCopy =
+      mode === 'edit'
+        ? 'Adjust the saved condition or description, or retake the photo if needed.'
+        : 'Review the draft and confirm, or retake if this result needs correcting.';
+
     return (
       <View style={styles.section}>
-        <Text style={styles.itemTitle}>{item.name}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.itemTitle}>{item.name}</Text>
+          <Text style={styles.supportingCopy}>{supportingCopy}</Text>
+        </View>
         {selectedAsset?.uri ? <Image source={{uri: selectedAsset.uri}} style={styles.preview} /> : null}
 
         {errorMessage ? <Notice>{errorMessage}</Notice> : null}
@@ -339,12 +371,10 @@ export function ItemCaptureSheet({
           <Button label="Confirm" onPress={handleConfirm} disabled={isBusy} />
         </View>
 
-        {errorMessage || !analysisSucceeded ? (
-          <View style={styles.secondaryActions}>
-            <Button label="Retake photo" onPress={() => void handleTakePhoto()} variant="secondary" disabled={isBusy} />
-            <Button label="Choose from library" onPress={() => void handleChooseFromLibrary()} variant="secondary" disabled={isBusy} />
-          </View>
-        ) : null}
+        <View style={styles.secondaryActions}>
+          <Button label="Retake photo" onPress={() => void handleTakePhoto()} variant="secondary" disabled={isBusy} />
+          <Button label="Choose from library" onPress={() => void handleChooseFromLibrary()} variant="secondary" disabled={isBusy} />
+        </View>
 
         {canSkipPhoto ? (
           <Pressable hitSlop={8} onPress={handleSkipPhoto} style={styles.linkButton}>
@@ -363,7 +393,7 @@ export function ItemCaptureSheet({
       backgroundStyle={styles.sheetBackground}
       enablePanDownToClose
       handleIndicatorStyle={styles.handleIndicator}
-      index={initialAsset ? 1 : 0}
+      index={initialIndex}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       onClose={handleClosed}

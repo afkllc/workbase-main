@@ -11,8 +11,13 @@ import {colours, layout, radii, spacing, typography} from '../../../src/theme';
 
 const confidenceOrder: Record<string, number> = {low: 0, medium: 1, high: 2};
 
+function itemNeedsAction(item: ItemRecord) {
+  return !item.is_confirmed || item.condition === 'poor';
+}
+
 function sortItemsForReview(items: ItemRecord[]): ItemRecord[] {
   return [...items].sort((a, b) => {
+    if (itemNeedsAction(a) !== itemNeedsAction(b)) return itemNeedsAction(a) ? -1 : 1;
     if (a.is_confirmed !== b.is_confirmed) return a.is_confirmed ? 1 : -1;
     const ca = confidenceOrder[a.ai_confidence ?? ''] ?? 3;
     const cb = confidenceOrder[b.ai_confidence ?? ''] ?? 3;
@@ -68,7 +73,8 @@ export default function ReviewScreen() {
   const totalItems = inspection?.rooms.reduce((count, room) => count + room.items_total, 0) ?? 0;
   const hasNoChecklistItems = totalItems === 0;
   const allItemsConfirmed = hasNoChecklistItems || totalConfirmed === totalItems;
-  const needsReviewCount = totalItems - totalConfirmed;
+  const needsReviewCount = inspection?.rooms.reduce((count, room) => count + room.items.filter((item) => itemNeedsAction(item)).length, 0) ?? 0;
+  const reportReady = Boolean(inspection && allItemsConfirmed && inspection.sections_completed);
 
   const allConfirmableItems = useMemo(() => {
     if (!inspection) return [];
@@ -88,7 +94,7 @@ export default function ReviewScreen() {
       return 0;
     }
 
-    return inspection.rooms.reduce((count, room) => count + (room.items.some((item) => !item.is_confirmed) ? 1 : 0), 0);
+    return inspection.rooms.reduce((count, room) => count + (room.items.some((item) => itemNeedsAction(item)) ? 1 : 0), 0);
   }, [inspection]);
 
   async function confirmItem(roomId: string, itemId: string, condition: Condition, description: string, photoName?: string) {
@@ -174,11 +180,21 @@ export default function ReviewScreen() {
           <>
             <Card>
               <StatusSummaryRow
-                subtitle={hasNoChecklistItems ? 'This template has no checklist items. You can generate the report immediately.' : 'All items must be confirmed before report generation.'}
-                statusValue={allItemsConfirmed ? 'ready' : 'review'}
+                subtitle={
+                  hasNoChecklistItems
+                    ? inspection.sections_completed
+                      ? 'This template has no checklist items. You can generate the report immediately.'
+                      : 'Save the fixed sections before generating the report.'
+                    : reportReady
+                      ? 'All capture work is done. Generate the report when you are ready.'
+                      : !inspection.sections_completed
+                        ? 'Save the fixed sections before report generation.'
+                        : 'Clear the remaining action-needed items before report generation.'
+                }
+                statusValue={reportReady ? 'ready' : 'review'}
                 title={`${totalConfirmed} of ${totalItems} items confirmed`}
               />
-              {needsReviewCount > 0 ? <Text style={styles.reviewCount}>{needsReviewCount} items need review</Text> : null}
+              {needsReviewCount > 0 ? <Text style={styles.reviewCount}>{needsReviewCount} items need action</Text> : null}
               {!hasNoChecklistItems ? (
                 <View style={styles.actionRow}>
                   <Pressable
@@ -187,7 +203,7 @@ export default function ReviewScreen() {
                     style={[styles.filterChip, filterNeedsReview ? styles.filterChipActive : null]}
                   >
                     <Text style={[styles.filterChipText, filterNeedsReview ? styles.filterChipTextActive : null]}>
-                      {filterNeedsReview ? 'Needs review' : 'All items'}
+                      {filterNeedsReview ? 'Action needed' : 'All items'}
                     </Text>
                   </Pressable>
                   {allConfirmableItems.length > 1 ? (
@@ -195,7 +211,10 @@ export default function ReviewScreen() {
                   ) : null}
                 </View>
               ) : null}
-              <Button label={saving ? 'Generating...' : 'Generate report'} onPress={() => void createReport()} disabled={!allItemsConfirmed || saving} />
+              {!inspection.sections_completed ? (
+                <Button label="Continue fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} disabled={saving} />
+              ) : null}
+              <Button label={saving ? 'Generating...' : 'Generate report'} onPress={() => void createReport()} disabled={!reportReady || saving} />
             </Card>
 
             {hasNoChecklistItems ? (
@@ -205,14 +224,14 @@ export default function ReviewScreen() {
               </Card>
             ) : filterNeedsReview && visibleRoomCount === 0 ? (
               <Card>
-                <Text style={styles.emptyTitle}>All items are confirmed - nothing left to review.</Text>
-                <Text style={styles.emptyCopy}>You can generate the report whenever you're ready.</Text>
+                <Text style={styles.emptyTitle}>No action-needed items remain.</Text>
+                <Text style={styles.emptyCopy}>{inspection.sections_completed ? "You can generate the report whenever you're ready." : 'Save the fixed sections to finish the inspection.'}</Text>
               </Card>
             ) : null}
 
             {inspection.rooms.map((room) => {
               const sortedItems = sortItemsForReview(room.items);
-              const visibleItems = filterNeedsReview ? sortedItems.filter((item) => !item.is_confirmed) : sortedItems;
+              const visibleItems = filterNeedsReview ? sortedItems.filter((item) => itemNeedsAction(item)) : sortedItems;
               const roomConfirmable = room.items.filter((item) => !item.is_confirmed && item.condition && item.description);
 
               if (filterNeedsReview && visibleItems.length === 0) return null;
@@ -252,8 +271,15 @@ export default function ReviewScreen() {
                           onPress={() => void confirmItem(room.id, item.id, item.condition as Condition, item.description, item.photos[0])}
                           disabled={saving}
                         />
+                      ) : item.is_confirmed && item.condition === 'poor' ? (
+                        <Button
+                          label="Open room"
+                          variant="secondary"
+                          onPress={() => router.push(`/inspection/${inspection.id}/room/${room.id}`)}
+                          disabled={saving}
+                        />
                       ) : (
-                        <StatusBadge value={item.is_confirmed ? 'confirmed' : 'pending'} />
+                        <StatusBadge value={item.is_confirmed ? item.condition ?? 'confirmed' : 'pending'} />
                       )}
                     </View>
                   ))}

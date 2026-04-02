@@ -59,7 +59,30 @@ export default function InspectionScreen() {
 
   const confirmed = inspection?.rooms.reduce((count, room) => count + room.items_confirmed, 0) ?? 0;
   const total = inspection?.rooms.reduce((count, room) => count + room.items_total, 0) ?? 0;
+  const flagged = inspection?.rooms.reduce((count, room) => count + room.items.filter((item) => item.is_confirmed && item.condition === 'poor').length, 0) ?? 0;
+  const remaining = Math.max(0, total - confirmed);
   const completion = total > 0 ? (confirmed / total) * 100 : 0;
+  const nextIncompleteRoom = inspection?.rooms.find((room) => room.items_confirmed < room.items_total) ?? null;
+
+  let primaryActionLabel = 'Open review';
+  let primaryAction: (() => void) | null = inspection ? () => router.push(`/inspection/${inspection.id}/review`) : null;
+  let progressHelperCopy = 'Review the inspection and generate the report when you are ready.';
+
+  if (inspection) {
+    if (nextIncompleteRoom) {
+      primaryActionLabel = `Continue ${nextIncompleteRoom.name}`;
+      primaryAction = () => router.push(`/inspection/${inspection.id}/room/${nextIncompleteRoom.id}`);
+      progressHelperCopy = `Next up: ${nextIncompleteRoom.name}. Keep capturing to move the inspection forward.`;
+    } else if (!inspection.sections_completed) {
+      primaryActionLabel = 'Continue fixed sections';
+      primaryAction = () => router.push(`/inspection/${inspection.id}/sections`);
+      progressHelperCopy = 'Rooms are done. Save the fixed sections to unlock review and reporting.';
+    } else {
+      primaryActionLabel = 'Finish inspection review';
+      primaryAction = () => router.push(`/inspection/${inspection.id}/review`);
+      progressHelperCopy = 'Everything is captured. Move into review to finish the inspection.';
+    }
+  }
 
   function dismissCreatedBanner() {
     setShowCreatedBanner(false);
@@ -92,11 +115,26 @@ export default function InspectionScreen() {
               <View style={styles.progressTrack}>
                 <View style={[styles.progressFill, {width: `${completion}%`}]} />
               </View>
-              {inspection.rooms.length > 0 && completion < 100 ? <Text style={styles.guidanceCopy}>Open a room below to continue capturing items.</Text> : null}
+              <View style={styles.metricsRow}>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricValue}>{confirmed}</Text>
+                  <Text style={styles.metricLabel}>Captured</Text>
+                </View>
+                <View style={styles.metricCard}>
+                  <Text style={[styles.metricValue, styles.flaggedMetric]}>{flagged}</Text>
+                  <Text style={styles.metricLabel}>Flagged</Text>
+                </View>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricValue}>{remaining}</Text>
+                  <Text style={styles.metricLabel}>Remaining</Text>
+                </View>
+              </View>
+              <Text style={styles.guidanceCopy}>{progressHelperCopy}</Text>
 
+              {primaryAction ? <Button label={primaryActionLabel} onPress={primaryAction} /> : null}
               <View style={styles.actionRow}>
-                <Button label="Property details" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} />
-                <Button label="Open review" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
+                <Button label="Fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} />
+                <Button label="Review inspection" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
               </View>
             </Card>
 
@@ -117,7 +155,7 @@ export default function InspectionScreen() {
                   dismissCreatedBanner();
                   router.push(`/inspection/${inspection.id}/room/${room.id}`);
                 }}
-                style={({pressed}) => [styles.roomCard, pressed ? styles.roomCardPressed : null]}
+                style={({pressed}) => [styles.roomCard, nextIncompleteRoom?.id === room.id ? styles.roomCardNext : null, pressed ? styles.roomCardPressed : null]}
               >
                 <StatusSummaryRow
                   subtitle={`${room.items_confirmed} of ${room.items_total} items confirmed`}
@@ -125,7 +163,9 @@ export default function InspectionScreen() {
                   title={room.name}
                 />
                 <View style={styles.roomFooter}>
-                  <Text style={styles.roomAction}>Open room</Text>
+                  <Text style={styles.roomAction}>
+                    {room.items_confirmed === 0 ? 'Start room' : room.items_confirmed === room.items_total ? 'Review room' : 'Continue room'}
+                  </Text>
                   <Feather color={colours.primary} name="chevron-right" size={18} />
                 </View>
               </Pressable>
@@ -184,6 +224,31 @@ const styles = StyleSheet.create({
     borderRadius: radii.badge,
     backgroundColor: colours.primary,
   },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: spacing.tightGap,
+  },
+  metricCard: {
+    flex: 1,
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: borders.subtle,
+    backgroundColor: surfaces.muted,
+    paddingHorizontal: spacing.compactGap,
+    paddingVertical: spacing.compactGap,
+    gap: 4,
+  },
+  metricValue: {
+    ...typography.cardTitle,
+    color: colours.textPrimary,
+  },
+  metricLabel: {
+    ...typography.label,
+    color: colours.textSecondary,
+  },
+  flaggedMetric: {
+    color: colours.destructive,
+  },
   guidanceCopy: {
     ...typography.body,
     color: colours.textSecondary,
@@ -191,6 +256,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     gap: spacing.tightGap,
+    flexWrap: 'wrap',
   },
   roomCard: {
     borderRadius: radii.card,
@@ -199,6 +265,10 @@ const styles = StyleSheet.create({
     backgroundColor: colours.surface,
     padding: spacing.cardPadding,
     gap: spacing.compactGap,
+  },
+  roomCardNext: {
+    borderColor: withAlpha(colours.primary, 0.26),
+    backgroundColor: withAlpha(colours.primary, 0.04),
   },
   roomCardPressed: {
     backgroundColor: withAlpha(colours.primary, 0.05),

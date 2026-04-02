@@ -145,6 +145,24 @@ slow in live feedback.
 
 ---
 
+### [mobile + backend] Confidence-driven exception routing
+
+**Detail:** Introduce a proper backend signal for `confidence` or
+`needs_review`, then use that contract to decide when mobile should
+auto-save and when it should force compact review. This should not be
+added until the backend signal is stable enough to trust in the field.
+
+---
+
+### [mobile] Dedicated flagged-items queue
+
+**Detail:** If the existing review experience becomes overloaded, add a
+separate flagged-items queue at room or inspection level. For the MVP,
+flagged items should stay inside the existing review flow to avoid
+splitting the user journey too early.
+
+---
+
 ### [mobile] Voice notes or dictation for defect descriptions
 
 **Detail:** Allow inspectors to speak a short note and attach it to the

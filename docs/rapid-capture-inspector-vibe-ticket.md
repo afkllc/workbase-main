@@ -38,8 +38,8 @@ The goal is to make Notara feel fast, operational, and purpose-built for inspect
 ### Target mode
 
 - Camera and evidence capture are the primary workflow
-- High-confidence items save fast with minimal interruption
-- Review is reserved for low-confidence or issue-heavy items
+- Successful AI results save fast with minimal interruption
+- Review is reserved for failed, unusable, or explicitly edited items
 - The interface feels like an inspection assistant, not a report builder
 - Every completed item and room leads directly into the next step
 
@@ -50,11 +50,11 @@ The goal is to make Notara feel fast, operational, and purpose-built for inspect
 For the internal demo, prioritise the smallest set of changes that most
 clearly improve speed, momentum, and field-tool credibility:
 
-- Auto-save high-confidence items with lightweight `Undo` and `Edit`
+- Auto-save successful AI capture results with lightweight `Undo` and `Edit`
 - Auto-advance to the next relevant item after save
 - Show a strong next-room or next-stage CTA when a room is complete
 - Surface captured, flagged, and remaining progress clearly
-- Refresh field-mode copy on active inspection screens
+- Refresh evidence-first framing on active inspection screens
 - Keep reporting and admin actions visually secondary until capture is complete
 
 Anything larger than this should only ship pre-demo if it directly
@@ -62,20 +62,38 @@ reduces interruption in the live inspection loop.
 
 ---
 
+## MVP Decisions Locked For This Ticket
+
+- A clean item should follow: `capture -> auto-save -> lightweight Undo/Edit state`
+- The next item should become highlighted and "armed" after save, but the
+  camera should not open automatically
+- For this demo, do not rely on backend confidence scoring to decide the
+  fast path
+- If AI fails, returns unusable output, or the inspector taps `Edit`, use
+  a compact manual review step
+- Do not add a dedicated flagged-items queue for the MVP; flagged items
+  should remain inside the existing review flow
+- Room completion CTA order should be:
+  - `Next room` if another room remains
+  - `Continue fixed sections` if rooms are done but fixed sections remain
+  - `Finish inspection review` only when both rooms and fixed sections are complete
+
+---
+
 ## Experience Goals
 
 1. **Reduce per-item effort**
-   - Clean items should take one capture and, when confidence is high, no extra confirmation step.
+   - Clean items should take one capture and no extra confirmation step when AI returns a usable result.
 
 2. **Review by exception**
-   - The user should only stop for manual review when AI is uncertain, when an issue is likely, or when the user explicitly chooses to edit.
+   - The user should only stop for manual review when AI fails, produces an unusable result, or when the user explicitly chooses to edit.
 
 3. **Keep momentum after every completion**
    - Finishing an item should naturally move the user to the next item.
    - Finishing a room should naturally move the user to the next room or the next inspection stage.
 
 4. **Make the product feel built for inspectors**
-   - Stronger operational language, clearer progress, evidence-first UI, and more purposeful visual hierarchy.
+   - Clearer progress, evidence-first UI, and more purposeful visual hierarchy should lead. Copy improvements are useful, but secondary.
 
 5. **Preserve trust and control**
    - Fast paths must still allow quick undo, manual correction, and issue flagging without hiding important decisions.
@@ -92,18 +110,19 @@ reduces interruption in the live inspection loop.
 | 2 | Camera opens immediately |
 | 3 | Inspector captures photo |
 | 4 | AI analyses photo against the tapped item |
-| 5 | If confidence is high and no issue is detected, item auto-saves |
+| 5 | If AI returns a usable result, the item auto-saves immediately |
 | 6 | A lightweight confirmation appears: `"Sink saved as Good"` with `Undo` / `Edit`, and clearly calls out the next item |
-| 7 | The next unconfirmed item becomes the active target immediately |
+| 7 | The next unconfirmed item becomes the highlighted active target, ready for the next tap |
 
 ### B. Exception path
 
-If AI confidence is not high, or the result looks like a defect / ambiguous condition:
+If AI analysis fails, the result is unusable, or the inspector taps `Edit`:
 
 - open compact review UI
-- show condition selector + editable description
+- show photo preview, condition selector, and editable description
 - allow `Confirm`, `Retake`, `Skip photo` where valid
 - return to rapid progression immediately after confirm
+- keep flagged or problematic items visible inside the existing review flow
 
 ### C. Room completion path
 
@@ -112,7 +131,8 @@ When the last required item in a room is completed:
 - show a clear room completion state
 - primary CTA:
   - `Next room` if another incomplete room exists
-  - `Finish inspection review` if all rooms are done
+  - `Continue fixed sections` if rooms are done but fixed sections remain
+  - `Finish inspection review` if rooms and fixed sections are complete
 - secondary CTA:
   - `Review flagged items`
 - tertiary CTA:
@@ -147,13 +167,15 @@ The user should never finish a room and wonder what the next step is.
 
 - Rework the room experience around a fast item-by-item capture loop.
 - Tapping an item should launch capture immediately.
-- High-confidence AI results should auto-save by default instead of always forcing confirm.
+- Successful AI capture results should auto-save by default instead of always forcing confirm.
 - Show a transient save confirmation with lightweight `Undo` and `Edit` actions.
+- If AI fails or the inspector explicitly edits, fall back to compact review without losing room context.
 
 ### 2. Add auto-advance to the next item
 
 - After an item is saved, automatically advance focus to the next unconfirmed item in the room.
 - The next item should feel "armed" and ready to capture.
+- The app should highlight the next item, not open the camera automatically.
 - Visually distinguish the next suggested item from the rest of the list.
 - If the user edits or undoes, keep them in context rather than resetting the whole flow.
 
@@ -162,43 +184,30 @@ The user should never finish a room and wonder what the next step is.
 - When a room is complete, immediately present the next stage.
 - Primary CTA rules:
   - if another incomplete room exists: `Next room`
-  - if no rooms remain: `Finish inspection review`
+  - if rooms are done but fixed sections remain: `Continue fixed sections`
+  - if rooms and fixed sections are done: `Finish inspection review`
 - Secondary action: `Review flagged items`
 - Do not rely on the header back button as the main way to continue the workflow.
 
-### 4. Add exception-first review behavior
+### 4. Use the existing review flow for exceptions
 
-- Introduce confidence-based handling:
-  - high confidence + non-problem result -> auto-save
-  - medium/low confidence -> compact review required
-  - explicit issue or defect indicators -> compact review required
-- Add a dedicated "flagged items" or "needs review" queue at room/inspection level.
+- Route AI failures, unusable AI output, and explicit user edits into compact review.
+- Keep flagged or problematic items inside the existing review flow rather than introducing a new queue for the demo.
 - Make review feel like clearing exceptions, not filling forms.
 
-### 5. Improve inspector-specific product language
-
-Replace generic/report-builder language with field-tool language. Examples:
-
-- `Checklist` -> `Inspection points` or `Items to capture`
-- `Upload photo` -> `Capture evidence`
-- `Open review` -> `Review flagged items`
-- `Confirmed` -> `Captured`
-- `Generate report` remains valid at end-stage, but should not dominate field screens
-
-Use language that feels practical, operational, and specific to inspection work.
-
-### 6. Refresh the visual vibe toward "inspection assistant"
+### 5. Prioritise evidence-first framing and progress clarity
 
 - Make the camera/capture action visually dominant
 - Increase contrast and reduce soft generic card styling
 - Show room progress clearly, e.g. `Kitchen 4/7 captured`
-- Surface evidence thumbnails, issue markers, and confidence states more clearly
+- Surface evidence thumbnails, issue markers, and capture states more clearly
 - Make status colours and labels feel purposeful, not decorative
+- Surface captured, flagged, and remaining counts on room and inspection views
 - Separate field mode visually from admin/setup/template-builder screens
 
 The mobile inspection flow should feel like a field tool. Template editing and reporting can remain more administrative.
 
-### 7. Keep reporting secondary during active inspection
+### 6. Keep reporting secondary during active inspection
 
 - Remove or de-emphasise report-oriented language and actions from room
   and item capture screens.
@@ -207,17 +216,13 @@ The mobile inspection flow should feel like a field tool. Template editing and r
 - Reserve `Generate report` and other end-stage actions for review and
   completion states, not the active capture loop.
 
-### 8. Add stronger issue and progress framing
+### 7. Keep wording improvements targeted
 
-- Show a visible count of:
-  - captured items
-  - flagged items
-  - remaining items
-- At room level, emphasise completion and unresolved exceptions
-- At inspection level, emphasise remaining work and next room
-- Make "what should I do next?" obvious without the user needing to infer it
+- Improve the highest-impact capture and progression language on field screens.
+- Do not over-rotate on naming or terminology before the demo.
+- Prioritise product flow and visual framing over broad copy rewrites.
 
-### 9. Preserve fast manual fallback paths
+### 8. Preserve fast manual fallback paths
 
 - Users must still be able to:
   - manually edit condition and description
@@ -232,9 +237,12 @@ The mobile inspection flow should feel like a field tool. Template editing and r
 ## Hard Rules
 
 - Optimise for the fastest safe field workflow, not the most explicit form flow
-- Do not force a confirmation step for every high-confidence item
+- Do not force a confirmation step for every successful AI capture result
 - Do not leave the user without an obvious next-step CTA after item or room completion
 - During active inspection, the UI should answer "what is the next capture task?" before it answers reporting or admin questions
+- Do not auto-open the camera for the next item after save; highlight and arm it instead
+- Do not depend on reliable backend confidence signals for the demo fast path
+- Do not introduce a dedicated flagged-item queue for the MVP unless the existing review flow proves insufficient
 - Preserve backend-routed AI architecture; do not call AI providers directly from mobile
 - All colours must continue to reference theme tokens
 - Any new fast path must preserve easy undo or edit affordances
@@ -243,15 +251,15 @@ The mobile inspection flow should feel like a field tool. Template editing and r
 
 ## Success Criteria
 
-- [ ] A clean, high-confidence item can be completed without a mandatory full review sheet
-- [ ] After saving an item, the flow naturally advances to the next item
-- [ ] After completing a room, the user sees a strong primary CTA for the next room or the next stage
-- [ ] Low-confidence or issue-heavy items still support quick manual review
-- [ ] The product language feels specific to inspectors and field capture
+- [ ] A clean item can be completed with capture plus auto-save and no mandatory review sheet
+- [ ] After saving an item, the next item is clearly highlighted and ready, without auto-opening the camera
+- [ ] After completing a room, the user sees the correct primary CTA for next room, fixed sections, or inspection review
+- [ ] AI failure or explicit edit still supports quick manual review without losing room context
 - [ ] The inspection flow feels more like an assistant for evidence capture than a report-builder UI
 - [ ] Users can tell at a glance what is captured, what is flagged, and what remains
 - [ ] The end-to-end mobile flow requires fewer interrupts and fewer decisions on clean items
 - [ ] Reporting and admin actions stay visually secondary until capture is complete
+- [ ] Flagged or problematic items remain visible inside the existing review flow without requiring a separate queue
 
 ---
 
@@ -259,22 +267,22 @@ The mobile inspection flow should feel like a field tool. Template editing and r
 
 ### Phase 1 — Speed
 
-- Auto-save high-confidence items
+- Auto-save successful AI capture results
 - Add auto-advance
 - Add next-room / next-stage CTA after room completion
+- Add fixed-sections step into end-of-room progression
 - Keep report/admin actions secondary on active capture screens
+- Strengthen room and inspection progress framing
 
 ### Phase 2 — Exception workflow
 
-- Add flagged-item queue
-- Route medium/low confidence outcomes into compact review
+- Route AI failures and explicit edits into compact review
 - Add better undo/edit affordances
 
 ### Phase 3 — Inspector vibe
 
-- Update field-mode copy
 - Refresh visual hierarchy for capture, progress, and issues
-- Strengthen room/inspection progress framing
+- Make small, high-impact field-language improvements only
 
 ---
 
@@ -284,6 +292,8 @@ The mobile inspection flow should feel like a field tool. Template editing and r
 - Web dashboard redesign
 - Offline sync architecture changes
 - Large template-builder redesign
+- Dedicated flagged-items queue
+- Confidence-driven exception routing
 
 ---
 

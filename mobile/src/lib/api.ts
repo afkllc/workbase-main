@@ -139,6 +139,12 @@ export function updateItem(
   });
 }
 
+export function resetItem(inspectionId: string, roomId: string, itemId: string) {
+  return request<InspectionRecord>(`/api/inspections/${inspectionId}/rooms/${roomId}/items/${itemId}/reset`, {
+    method: 'POST',
+  });
+}
+
 export function updateSections(inspectionId: string, payload: UpdateSectionsPayload) {
   return request<InspectionRecord>(`/api/inspections/${inspectionId}/sections`, {
     method: 'PATCH',

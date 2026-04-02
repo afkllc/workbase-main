@@ -17,7 +17,7 @@ export default function SectionsScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [shouldNavigateBackAfterSuccess, setShouldNavigateBackAfterSuccess] = useState(false);
+  const [shouldNavigateToReviewAfterSuccess, setShouldNavigateToReviewAfterSuccess] = useState(false);
   const [initialSectionsSnapshot, setInitialSectionsSnapshot] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +54,7 @@ export default function SectionsScreen() {
   }, [inspectionId]);
 
   const isDirty = Boolean(inspection && initialSectionsSnapshot && JSON.stringify(inspection.sections) !== initialSectionsSnapshot);
+  const allRoomsComplete = inspection ? inspection.rooms.every((room) => room.items_confirmed === room.items_total) : false;
 
   async function save() {
     if (!inspection) {
@@ -63,17 +64,18 @@ export default function SectionsScreen() {
     setSaving(true);
     setError(null);
     try {
-      await updateSections(inspection.id, {
+      const updated = await updateSections(inspection.id, {
         meter_readings: inspection.sections.meter_readings,
         keys_and_fobs: inspection.sections.keys_and_fobs,
         general_observations: inspection.sections.general_observations,
       });
-      setInitialSectionsSnapshot(JSON.stringify(inspection.sections));
+      setInspection(updated);
+      setInitialSectionsSnapshot(JSON.stringify(updated.sections));
       setSuccessMessage('Sections saved');
-      setShouldNavigateBackAfterSuccess(true);
+      setShouldNavigateToReviewAfterSuccess(allRoomsComplete);
     } catch (err) {
       setSuccessMessage(null);
-      setShouldNavigateBackAfterSuccess(false);
+      setShouldNavigateToReviewAfterSuccess(false);
       setError(err instanceof Error ? err.message : 'Failed to save sections.');
     } finally {
       setSaving(false);
@@ -82,10 +84,13 @@ export default function SectionsScreen() {
 
   function handleSuccessBannerDismiss() {
     setSuccessMessage(null);
-    if (shouldNavigateBackAfterSuccess) {
-      setShouldNavigateBackAfterSuccess(false);
-      router.back();
+    if (shouldNavigateToReviewAfterSuccess && inspection) {
+      setShouldNavigateToReviewAfterSuccess(false);
+      router.push(`/inspection/${inspection.id}/review`);
+      return;
     }
+
+    router.back();
   }
 
   return (
@@ -109,6 +114,13 @@ export default function SectionsScreen() {
               <Card>
                 <Text style={styles.sectionTitle}>Unsaved changes</Text>
                 <Text style={styles.sectionBody}>Save your property details before leaving this screen.</Text>
+              </Card>
+            ) : null}
+
+            {allRoomsComplete ? (
+              <Card>
+                <Text style={styles.sectionTitle}>Final capture step</Text>
+                <Text style={styles.sectionBody}>Save these fixed sections once to unlock the final inspection review.</Text>
               </Card>
             ) : null}
 
@@ -168,7 +180,7 @@ export default function SectionsScreen() {
               <TextField multiline value={inspection.sections.general_observations.additional_notes} onChangeText={(additional_notes) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, additional_notes}}})} />
             </Card>
 
-            <Button disabled={saving} label={saving ? 'Saving...' : 'Save sections'} onPress={() => void save()} />
+            <Button disabled={saving} label={saving ? 'Saving...' : allRoomsComplete ? 'Save and continue to review' : 'Save sections'} onPress={() => void save()} />
           </>
         ) : null}
       </Screen>

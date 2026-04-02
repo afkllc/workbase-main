@@ -110,6 +110,7 @@ class InspectionRecord(BaseModel):
     status: InspectionStatus = "draft"
     rooms: list[RoomRecord]
     sections: InspectionSections = Field(default_factory=InspectionSections)
+    sections_completed: bool = False
     report_url: str | None = None
 
 

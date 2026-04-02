@@ -96,6 +96,7 @@ export interface InspectionRecord {
   status: InspectionStatus;
   rooms: RoomRecord[];
   sections: InspectionSections;
+  sections_completed: boolean;
   report_url: string | null;
 }
 

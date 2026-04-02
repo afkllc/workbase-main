@@ -223,8 +223,6 @@ class InspectionStore:
     ) -> AnalysisSuggestion:
         inspection = self.get_inspection(inspection_id)
         room = self._get_room(inspection, room_id)
-        room.status = "capturing"
-        room.capture_mode = "photo"
 
         pending_items = [item for item in room.items if not item.is_confirmed]
         if not pending_items:
@@ -260,7 +258,6 @@ class InspectionStore:
             ),
             photo_name=file_name,
         )
-        self._save_inspection(inspection)
         return suggestion
 
     def update_item(self, inspection_id: str, room_id: str, payload: UpdateItemRequest) -> InspectionRecord:
@@ -274,12 +271,30 @@ class InspectionStore:
         item.description = payload.description
         item.is_confirmed = payload.is_confirmed
         item.source = payload.source
-        item.ai_confidence = "high"
+        item.ai_confidence = "high" if payload.source != "manual" else None
         if payload.photo_name:
-            item.photos.append(payload.photo_name)
+            if payload.photo_name not in item.photos:
+                item.photos.append(payload.photo_name)
 
-        room.items_confirmed = len([candidate for candidate in room.items if candidate.is_confirmed])
-        room.status = "confirmed" if room.items_confirmed == room.items_total else "review"
+        self._recalculate_room(room)
+        self._save_inspection(inspection)
+        return inspection
+
+    def reset_item(self, inspection_id: str, room_id: str, item_id: str) -> InspectionRecord:
+        inspection = self.get_inspection(inspection_id)
+        room = self._get_room(inspection, room_id)
+        item = next((candidate for candidate in room.items if candidate.id == item_id), None)
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Item '{item_id}' not found")
+
+        item.condition = None
+        item.description = ""
+        item.ai_confidence = None
+        item.source = "manual"
+        item.is_confirmed = False
+        item.photos = []
+
+        self._recalculate_room(room)
         self._save_inspection(inspection)
         return inspection
 
@@ -306,6 +321,7 @@ class InspectionStore:
             inspection.sections.keys_and_fobs = payload.keys_and_fobs
         if payload.general_observations is not None:
             inspection.sections.general_observations = payload.general_observations
+        inspection.sections_completed = True
         self._save_inspection(inspection)
         return inspection
 
@@ -357,6 +373,15 @@ class InspectionStore:
             items_total=len(items),
             items=items,
         )
+
+    def _recalculate_room(self, room: RoomRecord) -> None:
+        room.items_confirmed = len([candidate for candidate in room.items if candidate.is_confirmed])
+        if room.items_confirmed <= 0:
+            room.status = "not_started"
+        elif room.items_confirmed >= room.items_total:
+            room.status = "confirmed"
+        else:
+            room.status = "review"
 
     def _build_custom_template(
         self,
