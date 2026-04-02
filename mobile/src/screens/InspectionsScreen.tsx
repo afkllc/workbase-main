@@ -2,7 +2,8 @@ import Feather from '@expo/vector-icons/Feather';
 import {useFocusEffect, useRouter} from 'expo-router';
 import {useCallback, useMemo, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {Button, Card, LoadingRow, Notice, Screen, StatusBadge} from '../components/ui';
+import {EmptyState} from '../components/EmptyState';
+import {Card, LoadingRow, Notice, Screen, StatusBadge} from '../components/ui';
 import {listInspections} from '../lib/api';
 import type {InspectionSummary} from '../lib/types';
 import {formatDisplayName} from '../lib/utils';
@@ -69,9 +70,11 @@ export default function InspectionsScreen() {
 
       {inspections.length === 0 && !loading ? (
         <Card>
-          <Text style={styles.emptyTitle}>No inspections yet</Text>
-          <Text style={styles.emptyCopy}>Start a new inspection to begin capturing rooms and property details.</Text>
-          <Button label="New inspection" onPress={() => router.push('/new-inspection')} />
+          <EmptyState
+            action={{label: 'New inspection', onPress: () => router.push('/new-inspection')}}
+            icon="clipboard"
+            message="Start a new inspection to begin capturing rooms and property details."
+          />
         </Card>
       ) : null}
 
@@ -79,8 +82,8 @@ export default function InspectionsScreen() {
         <Pressable key={inspection.id} onPress={() => router.push(`/inspection/${inspection.id}`)} style={({pressed}) => [styles.inspectionCard, pressed ? styles.inspectionCardPressed : null]}>
           <View style={styles.rowHeader}>
             <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle}>{inspection.property_address}</Text>
-              <Text style={styles.rowSubtitle}>{formatDisplayName(inspection.property_type)} - {inspection.inspection_date}</Text>
+              <Text numberOfLines={1} style={styles.rowTitle}>{inspection.property_address}</Text>
+              <Text ellipsizeMode="tail" numberOfLines={1} style={styles.rowSubtitle}>{formatDisplayName(inspection.property_type)} - {inspection.inspection_date}</Text>
             </View>
             <StatusBadge value={inspection.status} />
           </View>
@@ -130,14 +133,6 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     ...typography.supporting,
-    color: colours.textSecondary,
-  },
-  emptyTitle: {
-    ...typography.cardTitle,
-    color: colours.textPrimary,
-  },
-  emptyCopy: {
-    ...typography.body,
     color: colours.textSecondary,
   },
   inspectionCard: {

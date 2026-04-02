@@ -1,5 +1,6 @@
 import type {ComponentProps} from 'react';
 import Feather from '@expo/vector-icons/Feather';
+import type {StyleProp, ViewStyle} from 'react-native';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {colours, radii, shadows, spacing, typography, withAlpha} from '../theme';
 
@@ -10,14 +11,16 @@ export function QuickActionTile({
   icon,
   label,
   onPress,
+  style,
 }: {
   description: string;
   icon: FeatherName;
   label: string;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <Pressable onPress={onPress} style={({pressed}) => [styles.tile, pressed ? styles.tilePressed : null]}>
+    <Pressable onPress={onPress} style={({pressed}) => [styles.tile, style, pressed ? styles.tilePressed : null]}>
       <View style={styles.iconShell}>
         <Feather color={colours.primary} name={icon} size={20} />
       </View>
@@ -29,7 +32,6 @@ export function QuickActionTile({
 
 const styles = StyleSheet.create({
   tile: {
-    width: '48%',
     minHeight: 134,
     borderRadius: radii.tile,
     borderWidth: 1,

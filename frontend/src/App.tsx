@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {BottomNav} from './components/layout';
+import type {JSX} from 'react';
+import {AppShell, ScreenStage} from './components/layout';
 import {
   analysePhoto,
   createInspection,
@@ -63,7 +64,7 @@ export default function App() {
   );
   const totalConfirmed = inspection ? inspection.rooms.reduce((count, room) => count + room.items_confirmed, 0) : 0;
   const totalItems = inspection ? inspection.rooms.reduce((count, room) => count + room.items_total, 0) : 0;
-  const allItemsConfirmed = totalItems > 0 && totalConfirmed === totalItems;
+  const allItemsConfirmed = totalItems === 0 || totalConfirmed === totalItems;
 
   useEffect(() => {
     void loadBootstrap();
@@ -274,63 +275,111 @@ export default function App() {
   }
 
   const completedReports = inspections.filter((entry) => entry.status === 'completed');
+  const stageKey = `${screen}:${inspection?.id ?? 'none'}:${selectedRoomId ?? 'none'}`;
+
+  let screenContent: JSX.Element | null = null;
+
+  if (screen === 'home') {
+    screenContent = (
+      <HomeScreen
+        loading={loading}
+        inspections={inspections}
+        onOpenInspection={(id) => void openInspection(id)}
+        onNewInspection={(address) => {
+          setPrefillAddress(address);
+          setScreen('new-inspection');
+        }}
+        onNavigate={(s) => setScreen(s as Screen)}
+      />
+    );
+  }
+
+  if (screen === 'new-inspection') {
+    screenContent = (
+      <NewInspectionScreen
+        templates={templates}
+        saving={saving}
+        initialAddress={prefillAddress}
+        onBack={() => {
+          setPrefillAddress(undefined);
+          setScreen('home');
+        }}
+        onSubmit={handleCreateInspection}
+      />
+    );
+  }
+
+  if (screen === 'room-list' && inspection) {
+    screenContent = (
+      <RoomListScreen
+        inspection={inspection}
+        onBack={() => setScreen('home')}
+        onOpenRoom={(room) => {
+          setSelectedRoomId(room.id);
+          setSuggestion(null);
+          setScreen('room-capture');
+        }}
+        onGoToReview={() => setScreen('review')}
+        onGoToMeters={() => setScreen('meter-readings')}
+        onGoToKeys={() => setScreen('keys')}
+        onGoToGeneral={() => setScreen('general')}
+      />
+    );
+  }
+
+  if (screen === 'room-capture' && inspection && selectedRoom) {
+    screenContent = (
+      <RoomCaptureScreen
+        inspection={inspection}
+        room={selectedRoom}
+        suggestion={suggestion}
+        saving={saving}
+        fileInputRef={fileInputRef}
+        onBack={() => setScreen('room-list')}
+        onUploadClick={() => fileInputRef.current?.click()}
+        onFileChange={(file) => void handleAnalysePhoto(file)}
+        onVideoScan={() => void handleVideoScan()}
+        onSuggestionChange={setSuggestion}
+        onConfirmSuggestion={() => void handleConfirmSuggestion()}
+      />
+    );
+  }
+
+  if (screen === 'meter-readings' && inspection) {
+    screenContent = <MeterReadingsScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(meter_readings) => void handleSaveSections({meter_readings})} />;
+  }
+
+  if (screen === 'keys' && inspection) {
+    screenContent = <KeysScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(keys_and_fobs) => void handleSaveSections({keys_and_fobs})} />;
+  }
+
+  if (screen === 'general' && inspection) {
+    screenContent = <GeneralScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(general_observations) => void handleSaveSections({general_observations})} />;
+  }
+
+  if (screen === 'review' && inspection) {
+    screenContent = (
+      <ReviewScreen
+        inspection={inspection}
+        totalConfirmed={totalConfirmed}
+        totalItems={totalItems}
+        allItemsConfirmed={allItemsConfirmed}
+        saving={saving}
+        onBack={() => setScreen('room-list')}
+        onGenerate={() => void handleGenerateReport()}
+        onConfirmItem={(roomId, itemId, condition, description, photoName) => void handleConfirmReviewItem(roomId, itemId, condition, description, photoName)}
+        onBulkConfirm={(items) => void handleBulkConfirm(items)}
+      />
+    );
+  }
+
+  if (screen === 'reports') {
+    screenContent = <ReportsScreen baseUrl={getApiBaseUrl()} loading={loading} reports={completedReports} onBack={() => setScreen('home')} />;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <main className="mx-auto min-h-screen max-w-md bg-slate-100 pb-24 shadow-2xl shadow-slate-300/30">
-        {successMessage ? <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{successMessage}</div> : null}
-        {error ? <div role="alert" className="border-b border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-        {screen === 'home' ? <HomeScreen loading={loading} inspections={inspections} onOpenInspection={(id) => void openInspection(id)} onNewInspection={(address) => { setPrefillAddress(address); setScreen('new-inspection'); }} onNavigate={(s) => setScreen(s as Screen)} /> : null}
-        {screen === 'new-inspection' ? <NewInspectionScreen templates={templates} saving={saving} initialAddress={prefillAddress} onBack={() => { setPrefillAddress(undefined); setScreen('home'); }} onSubmit={handleCreateInspection} /> : null}
-        {screen === 'room-list' && inspection ? (
-          <RoomListScreen
-            inspection={inspection}
-            onBack={() => setScreen('home')}
-            onOpenRoom={(room) => {
-              setSelectedRoomId(room.id);
-              setSuggestion(null);
-              setScreen('room-capture');
-            }}
-            onGoToReview={() => setScreen('review')}
-            onGoToMeters={() => setScreen('meter-readings')}
-            onGoToKeys={() => setScreen('keys')}
-            onGoToGeneral={() => setScreen('general')}
-          />
-        ) : null}
-        {screen === 'room-capture' && inspection && selectedRoom ? (
-          <RoomCaptureScreen
-            inspection={inspection}
-            room={selectedRoom}
-            suggestion={suggestion}
-            saving={saving}
-            fileInputRef={fileInputRef}
-            onBack={() => setScreen('room-list')}
-            onUploadClick={() => fileInputRef.current?.click()}
-            onFileChange={(file) => void handleAnalysePhoto(file)}
-            onVideoScan={() => void handleVideoScan()}
-            onSuggestionChange={setSuggestion}
-            onConfirmSuggestion={() => void handleConfirmSuggestion()}
-          />
-        ) : null}
-        {screen === 'meter-readings' && inspection ? <MeterReadingsScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(meter_readings) => void handleSaveSections({meter_readings})} /> : null}
-        {screen === 'keys' && inspection ? <KeysScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(keys_and_fobs) => void handleSaveSections({keys_and_fobs})} /> : null}
-        {screen === 'general' && inspection ? <GeneralScreen inspection={inspection} saving={saving} onBack={() => setScreen('room-list')} onSave={(general_observations) => void handleSaveSections({general_observations})} /> : null}
-        {screen === 'review' && inspection ? (
-          <ReviewScreen
-            inspection={inspection}
-            totalConfirmed={totalConfirmed}
-            totalItems={totalItems}
-            allItemsConfirmed={allItemsConfirmed}
-            saving={saving}
-            onBack={() => setScreen('room-list')}
-            onGenerate={() => void handleGenerateReport()}
-            onConfirmItem={(roomId, itemId, condition, description, photoName) => void handleConfirmReviewItem(roomId, itemId, condition, description, photoName)}
-            onBulkConfirm={(items) => void handleBulkConfirm(items)}
-          />
-        ) : null}
-        {screen === 'reports' ? <ReportsScreen baseUrl={getApiBaseUrl()} loading={loading} reports={completedReports} onBack={() => setScreen('home')} /> : null}
-        <BottomNav currentScreen={screen} setScreen={setScreen} />
-      </main>
-    </div>
+    <AppShell currentScreen={screen} error={error} setScreen={setScreen} successMessage={successMessage}>
+      <ScreenStage key={stageKey} stageKey={stageKey}>{screenContent}</ScreenStage>
+    </AppShell>
   );
 }

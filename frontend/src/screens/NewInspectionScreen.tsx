@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {ChevronDown, ChevronUp, LoaderCircle, Plus, Sparkles} from 'lucide-react';
 import {Input, FieldLabel} from '../components/fields';
-import {Header, SectionCard} from '../components/layout';
+import {Header, PageBody, SectionCard} from '../components/layout';
 import type {CreateInspectionPayload, TemplateSummary} from '../types';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -35,7 +35,10 @@ function parseNaturalInput(text: string, templates: TemplateSummary[]): Partial<
         break;
       }
     }
-    if (result.template_key) break;
+
+    if (result.template_key) {
+      break;
+    }
   }
 
   const postcodeMatch = remaining.match(/\b([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})\b/i);
@@ -53,9 +56,9 @@ function parseNaturalInput(text: string, templates: TemplateSummary[]): Partial<
 }
 
 function offsetDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 export function NewInspectionScreen({
@@ -90,7 +93,10 @@ export function NewInspectionScreen({
   }, [templates, form.template_key]);
 
   function applyPrompt() {
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) {
+      return;
+    }
+
     const extracted = parseNaturalInput(prompt, templates);
     setForm((current) => ({
       ...current,
@@ -110,99 +116,100 @@ export function NewInspectionScreen({
     <div>
       <Header title="New inspection" subtitle="Describe what you need or fill in the details below." showBack onBack={onBack} />
       <form
-        className="space-y-5 px-4 py-5"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit(form);
         }}
       >
-        <SectionCard>
-          <div className="flex items-center gap-2 text-blue-600">
-            <Sparkles size={14} />
-            <p className="text-xs font-bold uppercase tracking-widest">Quick start</p>
-          </div>
-          <p className="mt-1 text-sm text-slate-500">
-            Try: "12 High Street NW1 4NP tomorrow" or "flat inspection next week"
-          </p>
-          <div className="mt-3 flex gap-2">
-            <input
-              type="text"
-              value={prompt}
-              onChange={(e) => { setPrompt(e.target.value); setParsed(false); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyPrompt(); } }}
-              placeholder="Describe your inspection..."
-              className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-            />
-            <button
-              type="button"
-              onClick={applyPrompt}
-              disabled={!prompt.trim()}
-              className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Parse
-            </button>
-          </div>
-          {parsed ? <p className="mt-2 text-xs text-emerald-600 font-medium">Fields updated from your description. Review below and adjust if needed.</p> : null}
-        </SectionCard>
-
-        <button
-          type="button"
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
-        >
-          <span>{showDetails ? 'Hide details' : 'Edit details'}</span>
-          {showDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
-
-        {showDetails ? (
+        <PageBody className="max-w-4xl">
           <SectionCard>
-            <div className="space-y-4">
-              <Input label="Property address" value={form.property_address} onChange={(property_address) => setForm({...form, property_address})} />
-              <Input label="Postcode" value={form.postcode} onChange={(postcode) => setForm({...form, postcode})} />
-              <div>
-                <FieldLabel label="Inspection template" />
-                <select
-                  value={form.template_key}
-                  onChange={(event) => setForm({...form, template_key: event.target.value})}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                >
-                  {templates.map((template) => (
-                    <option key={template.key} value={template.key}>
-                      {template.property_type} - {template.name}{template.source === 'custom' ? ' (custom)' : ''}
-                    </option>
-                  ))}
-                </select>
-                {selectedTemplate ? (
-                  <p className="mt-2 text-sm text-slate-500">
-                    {selectedTemplate.source === 'custom' ? 'Custom template' : 'Built-in template'} selected for {selectedTemplate.property_type}.
-                  </p>
-                ) : null}
+            <div className="flex items-center gap-2 text-blue-600">
+              <Sparkles size={14} />
+              <p className="text-xs font-bold uppercase tracking-widest">Quick start</p>
+            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              Try: "12 High Street NW1 4NP tomorrow" or "flat inspection next week"
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(event) => {
+                  setPrompt(event.target.value);
+                  setParsed(false);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applyPrompt();
+                  }
+                }}
+                placeholder="Describe your inspection..."
+                className="wb-field flex-1"
+              />
+              <button type="button" onClick={applyPrompt} disabled={!prompt.trim()} className="wb-btn-primary">
+                Parse
+              </button>
+            </div>
+            {parsed ? <p className="mt-2 text-xs font-medium text-emerald-600">Fields updated from your description. Review below and adjust if needed.</p> : null}
+          </SectionCard>
+
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition duration-200 ease-out hover:border-blue-200 hover:bg-blue-50/40"
+          >
+            <span>{showDetails ? 'Hide details' : 'Edit details'}</span>
+            {showDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {showDetails ? (
+            <SectionCard>
+              <div className="space-y-4">
+                <Input label="Property address" value={form.property_address} onChange={(property_address) => setForm({...form, property_address})} />
+                <Input label="Postcode" value={form.postcode} onChange={(postcode) => setForm({...form, postcode})} />
+                <div>
+                  <FieldLabel label="Inspection template" />
+                  <select
+                    value={form.template_key}
+                    onChange={(event) => setForm({...form, template_key: event.target.value})}
+                    className="wb-field"
+                  >
+                    {templates.map((template) => (
+                      <option key={template.key} value={template.key}>
+                        {template.property_type} - {template.name}{template.source === 'custom' ? ' (custom)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedTemplate ? (
+                    <p className="mt-2 text-sm text-slate-500">
+                      {selectedTemplate.source === 'custom' ? 'Custom template' : 'Built-in template'} selected for {selectedTemplate.property_type}.
+                    </p>
+                  ) : null}
+                </div>
+                <Input label="Landlord name" value={form.landlord_name} onChange={(landlord_name) => setForm({...form, landlord_name})} />
+                <Input label="Tenant names" value={form.tenant_names} onChange={(tenant_names) => setForm({...form, tenant_names})} />
+                <Input label="Inspection date" type="date" value={form.inspection_date} onChange={(inspection_date) => setForm({...form, inspection_date})} />
               </div>
-              <Input label="Landlord name" value={form.landlord_name} onChange={(landlord_name) => setForm({...form, landlord_name})} />
-              <Input label="Tenant names" value={form.tenant_names} onChange={(tenant_names) => setForm({...form, tenant_names})} />
-              <Input label="Inspection date" type="date" value={form.inspection_date} onChange={(inspection_date) => setForm({...form, inspection_date})} />
-            </div>
-          </SectionCard>
-        ) : (
-          <SectionCard>
-            <div className="space-y-1 text-sm">
-              {form.property_address ? <p className="text-slate-900"><span className="font-medium text-slate-500">Address:</span> {form.property_address}</p> : null}
-              {form.postcode ? <p className="text-slate-900"><span className="font-medium text-slate-500">Postcode:</span> {form.postcode}</p> : null}
-              {selectedTemplate ? <p className="text-slate-900"><span className="font-medium text-slate-500">Template:</span> {selectedTemplate.property_type} - {selectedTemplate.name}</p> : null}
-              <p className="text-slate-900"><span className="font-medium text-slate-500">Date:</span> {form.inspection_date}</p>
-              {!form.property_address && !form.postcode ? <p className="text-slate-400 italic">Use Quick start above or tap Edit details</p> : null}
-            </div>
-          </SectionCard>
-        )}
+            </SectionCard>
+          ) : (
+            <SectionCard>
+              <h2 className="text-lg font-semibold text-slate-950">Current summary</h2>
+              <div className="mt-3 space-y-1 text-sm">
+                {form.property_address ? <p className="text-slate-900"><span className="font-medium text-slate-500">Address:</span> {form.property_address}</p> : null}
+                {form.postcode ? <p className="text-slate-900"><span className="font-medium text-slate-500">Postcode:</span> {form.postcode}</p> : null}
+                {selectedTemplate ? <p className="text-slate-900"><span className="font-medium text-slate-500">Template:</span> {selectedTemplate.property_type} - {selectedTemplate.name}</p> : null}
+                <p className="text-slate-900"><span className="font-medium text-slate-500">Date:</span> {form.inspection_date}</p>
+                {!form.property_address && !form.postcode ? <p className="italic text-slate-400">Use Quick start above or tap Edit details.</p> : null}
+              </div>
+            </SectionCard>
+          )}
 
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-300/30 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving ? <LoaderCircle className="animate-spin" size={18} /> : <Plus size={18} />}
-          Start inspection
-        </button>
+          <button type="submit" disabled={!canSubmit} className="wb-btn-primary w-full">
+            {saving ? <LoaderCircle className="animate-spin" size={18} /> : <Plus size={18} />}
+            Start inspection
+          </button>
+        </PageBody>
       </form>
     </div>
   );

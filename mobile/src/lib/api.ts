@@ -69,12 +69,6 @@ export function updateTemplate(templateKey: string, payload: TemplateEditorPaylo
   });
 }
 
-export function deleteTemplate(templateKey: string) {
-  return request<void>(`/api/templates/${templateKey}`, {
-    method: 'DELETE',
-  });
-}
-
 export function listInspections() {
   return request<InspectionSummary[]>('/api/inspections');
 }
@@ -157,5 +151,11 @@ export function runVideoScan(inspectionId: string, roomId: string) {
 export function generateReport(inspectionId: string) {
   return request<InspectionRecord>(`/api/inspections/${inspectionId}/generate`, {
     method: 'POST',
+  });
+}
+
+export function archiveReport(inspectionId: string) {
+  return request<void>(`/api/reports/${inspectionId}/archive`, {
+    method: 'PATCH',
   });
 }

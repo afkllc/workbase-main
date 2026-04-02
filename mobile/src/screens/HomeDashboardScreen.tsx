@@ -1,12 +1,16 @@
 import {useFocusEffect, useRouter} from 'expo-router';
 import {useCallback, useMemo, useState} from 'react';
 import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {AiPill} from '../components/AiPill';
+import {EmptyState} from '../components/EmptyState';
 import {QuickActionTile} from '../components/QuickActionTile';
 import {Button, Card, LoadingRow, Notice, Screen, StatusBadge} from '../components/ui';
 import {listInspections} from '../lib/api';
 import type {InspectionSummary} from '../lib/types';
 import {formatDisplayName} from '../lib/utils';
 import {borders, colours, radii, spacing, surfaces, typography, withAlpha} from '../theme';
+
+const QUICK_ACTION_TILE_WIDTH = 142;
 
 function parseCommand(input: string, inspections: InspectionSummary[]): {type: 'new'; address: string} | {type: 'open'; id: string} | {type: 'navigate'; screen: string} | {type: 'hint'; message: string} {
   const text = input.trim().toLowerCase();
@@ -95,7 +99,7 @@ export default function HomeDashboardScreen() {
       : 'Start your first inspection.';
   const overviewCopy = draftCount > 0
     ? 'Keep capture and review moving from one place, then open the right screen when you are ready.'
-    : 'Use the shortcuts below to jump into active work, templates, or settings.';
+    : 'Use the shortcuts below to jump into active work, reports, or settings.';
 
   function handleCommand() {
     if (!command.trim()) {
@@ -150,7 +154,10 @@ export default function HomeDashboardScreen() {
 
       <Card>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Ask AI</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Ask AI</Text>
+            <AiPill />
+          </View>
           <Text style={styles.sectionHint}>Start, continue, or route work quickly.</Text>
         </View>
         <TextInput
@@ -177,10 +184,9 @@ export default function HomeDashboardScreen() {
           <Text style={styles.sectionHint}>Secondary shortcuts when you need to jump around the app.</Text>
         </View>
         <View style={styles.quickActionGrid}>
-          <QuickActionTile description="Open active inspection work." icon="clipboard" label="Inspections" onPress={() => router.push('/inspections')} />
-          <QuickActionTile description="See completed reports." icon="file-text" label="Reports" onPress={() => router.push('/reports')} />
-          <QuickActionTile description="Edit reusable templates." icon="layers" label="Templates" onPress={() => router.push('/template-builder')} />
-          <QuickActionTile description="Version and app details." icon="settings" label="Settings" onPress={() => router.push('/settings')} />
+          <QuickActionTile description="Open active inspection work." icon="clipboard" label="Inspections" onPress={() => router.push('/inspections')} style={styles.quickActionTile} />
+          <QuickActionTile description="See completed reports." icon="file-text" label="Reports" onPress={() => router.push('/reports')} style={styles.quickActionTile} />
+          <QuickActionTile description="Version and app details." icon="settings" label="Settings" onPress={() => router.push('/settings')} style={styles.quickActionTile} />
         </View>
       </Card>
 
@@ -191,11 +197,11 @@ export default function HomeDashboardScreen() {
         </View>
 
         {recentInspections.length === 0 && !loading ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No inspections yet</Text>
-            <Text style={styles.emptyCopy}>Create the first inspection to start capturing rooms and property details.</Text>
-            <Button label="New inspection" onPress={() => router.push('/new-inspection')} />
-          </View>
+          <EmptyState
+            action={{label: 'New inspection', onPress: () => router.push('/new-inspection')}}
+            icon="clipboard"
+            message="Create the first inspection to start capturing rooms and property details."
+          />
         ) : null}
 
         {recentInspections.map((inspection) => (
@@ -250,6 +256,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     gap: 4,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.compactGap,
+  },
   sectionTitle: {
     ...typography.cardTitle,
     color: colours.textPrimary,
@@ -281,16 +293,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.compactGap,
   },
-  emptyState: {
-    gap: spacing.compactGap,
-  },
-  emptyTitle: {
-    ...typography.cardTitle,
-    color: colours.textPrimary,
-  },
-  emptyCopy: {
-    ...typography.body,
-    color: colours.textSecondary,
+  quickActionTile: {
+    width: QUICK_ACTION_TILE_WIDTH,
   },
   listRow: {
     flexDirection: 'row',

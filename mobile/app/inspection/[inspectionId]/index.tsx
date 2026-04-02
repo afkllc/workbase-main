@@ -2,6 +2,7 @@ import Feather from '@expo/vector-icons/Feather';
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
 import {useCallback, useEffect, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {EmptyState} from '../../../src/components/EmptyState';
 import {StatusSummaryRow} from '../../../src/components/StatusSummaryRow';
 import {Button, Card, LoadingRow, Notice, Screen} from '../../../src/components/ui';
 import {getInspection} from '../../../src/lib/api';
@@ -98,6 +99,16 @@ export default function InspectionScreen() {
                 <Button label="Open review" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
               </View>
             </Card>
+
+            {inspection.rooms.length === 0 ? (
+              <Card>
+                <EmptyState
+                  action={{label: 'Open review', onPress: () => router.push(`/inspection/${inspection.id}/review`), variant: 'secondary'}}
+                  icon="home"
+                  message="No rooms to capture"
+                />
+              </Card>
+            ) : null}
 
             {inspection.rooms.map((room) => (
               <Pressable

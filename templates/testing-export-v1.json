@@ -1,0 +1,46 @@
+{
+  "key": "testing-export-v1",
+  "name": "Export Smoke Test",
+  "version": "1.0.0",
+  "property_type": "Testing",
+  "rooms": [],
+  "optional_rooms": [],
+  "fixed_sections": {
+    "meter_readings": {
+      "types": ["gas", "electric", "water"],
+      "photo_required": true,
+      "ai_enabled": true
+    },
+    "keys_and_fobs": {
+      "common_items": ["Front door key", "Back door key", "Mailbox key", "Window key"]
+    },
+    "general_observations": {
+      "checklist": [
+        {
+          "key": "smoke_alarms",
+          "name": "Smoke Alarm(s)",
+          "type": "boolean_with_note",
+          "guidance": "Record whether alarms are present and working."
+        },
+        {
+          "key": "co_detector",
+          "name": "Carbon Monoxide Detector",
+          "type": "boolean_with_note",
+          "guidance": "Record whether a detector is present and working."
+        },
+        {
+          "key": "overall_cleanliness",
+          "name": "Overall Cleanliness",
+          "type": "rating",
+          "options": ["professional_clean", "good", "fair", "poor"]
+        },
+        {
+          "key": "additional_notes",
+          "name": "Additional Notes",
+          "type": "free_text",
+          "guidance": "Add anything material not captured elsewhere."
+        }
+      ]
+    }
+  }
+}

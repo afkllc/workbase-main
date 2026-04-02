@@ -7,7 +7,7 @@ import {generateReport, getInspection, updateItem} from '../../../src/lib/api';
 import type {Condition, InspectionRecord, ItemRecord} from '../../../src/lib/types';
 import {formatCondition} from '../../../src/lib/utils';
 import {AppStackScreen} from '../../../src/navigation/AppStackScreen';
-import {colours, typography} from '../../../src/theme';
+import {colours, layout, radii, spacing, typography} from '../../../src/theme';
 
 const confidenceOrder: Record<string, number> = {low: 0, medium: 1, high: 2};
 
@@ -66,7 +66,8 @@ export default function ReviewScreen() {
 
   const totalConfirmed = inspection?.rooms.reduce((count, room) => count + room.items_confirmed, 0) ?? 0;
   const totalItems = inspection?.rooms.reduce((count, room) => count + room.items_total, 0) ?? 0;
-  const allItemsConfirmed = totalItems > 0 && totalConfirmed === totalItems;
+  const hasNoChecklistItems = totalItems === 0;
+  const allItemsConfirmed = hasNoChecklistItems || totalConfirmed === totalItems;
   const needsReviewCount = totalItems - totalConfirmed;
 
   const allConfirmableItems = useMemo(() => {
@@ -173,25 +174,36 @@ export default function ReviewScreen() {
           <>
             <Card>
               <StatusSummaryRow
-                subtitle="All items must be confirmed before report generation."
+                subtitle={hasNoChecklistItems ? 'This template has no checklist items. You can generate the report immediately.' : 'All items must be confirmed before report generation.'}
                 statusValue={allItemsConfirmed ? 'ready' : 'review'}
                 title={`${totalConfirmed} of ${totalItems} items confirmed`}
               />
               {needsReviewCount > 0 ? <Text style={styles.reviewCount}>{needsReviewCount} items need review</Text> : null}
-              <View style={styles.actionRow}>
-                <Pressable style={[styles.filterChip, filterNeedsReview ? styles.filterChipActive : null]} onPress={() => setFilterNeedsReview(!filterNeedsReview)}>
-                  <Text style={[styles.filterChipText, filterNeedsReview ? styles.filterChipTextActive : null]}>
-                    {filterNeedsReview ? 'Needs review' : 'All items'}
-                  </Text>
-                </Pressable>
-                {allConfirmableItems.length > 1 ? (
-                  <Button label={`Confirm all (${allConfirmableItems.length})`} onPress={() => void bulkConfirm(allConfirmableItems)} disabled={saving} />
-                ) : null}
-              </View>
+              {!hasNoChecklistItems ? (
+                <View style={styles.actionRow}>
+                  <Pressable
+                    hitSlop={4}
+                    onPress={() => setFilterNeedsReview(!filterNeedsReview)}
+                    style={[styles.filterChip, filterNeedsReview ? styles.filterChipActive : null]}
+                  >
+                    <Text style={[styles.filterChipText, filterNeedsReview ? styles.filterChipTextActive : null]}>
+                      {filterNeedsReview ? 'Needs review' : 'All items'}
+                    </Text>
+                  </Pressable>
+                  {allConfirmableItems.length > 1 ? (
+                    <Button label={`Confirm all (${allConfirmableItems.length})`} onPress={() => void bulkConfirm(allConfirmableItems)} disabled={saving} />
+                  ) : null}
+                </View>
+              ) : null}
               <Button label={saving ? 'Generating...' : 'Generate report'} onPress={() => void createReport()} disabled={!allItemsConfirmed || saving} />
             </Card>
 
-            {filterNeedsReview && visibleRoomCount === 0 ? (
+            {hasNoChecklistItems ? (
+              <Card>
+                <Text style={styles.emptyTitle}>This template has no checklist items.</Text>
+                <Text style={styles.emptyCopy}>Generate the report from this screen to quickly test export and report rendering.</Text>
+              </Card>
+            ) : filterNeedsReview && visibleRoomCount === 0 ? (
               <Card>
                 <Text style={styles.emptyTitle}>All items are confirmed - nothing left to review.</Text>
                 <Text style={styles.emptyCopy}>You can generate the report whenever you're ready.</Text>
@@ -257,7 +269,7 @@ export default function ReviewScreen() {
 
 const styles = StyleSheet.create({
   reviewCount: {
-    marginTop: 4,
+    marginTop: spacing.tightGap / 2,
     color: colours.accent,
     ...typography.supporting,
     fontWeight: '600',
@@ -265,16 +277,19 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.tightGap,
     flexWrap: 'wrap',
   },
   filterChip: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    minHeight: layout.minTouchTarget,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.compactGap,
+    paddingVertical: spacing.tightGap,
     backgroundColor: colours.background,
     borderWidth: 1,
     borderColor: colours.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChipActive: {
     backgroundColor: colours.background,

@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {colours, layout, radii, shadows, spacing, typography} from '../theme';
+import {borders, colours, layout, radii, shadows, spacing, surfaces, typography} from '../theme';
 
 type FeatherName = ComponentProps<typeof Feather>['name'];
 
@@ -48,8 +48,12 @@ export function AppTabBar({state, descriptors, navigation}: BottomTabBarProps) {
                 }}
                 style={styles.tabItem}
               >
-                <Feather color={isFocused ? colours.primary : colours.textSecondary} name={config.icon} size={20} />
-                <Text style={[styles.tabLabel, isFocused ? styles.tabLabelActive : null]}>{config.label}</Text>
+                <View style={[styles.tabIconShell, isFocused ? styles.tabIconShellActive : null]}>
+                  <Feather color={isFocused ? colours.primary : colours.textSecondary} name={config.icon} size={20} />
+                </View>
+                <Text ellipsizeMode="tail" numberOfLines={1} style={[styles.tabLabel, isFocused ? styles.tabLabelActive : null]}>
+                  {config.label}
+                </Text>
               </Pressable>
             </Fragment>
           );
@@ -76,20 +80,39 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
   tabItem: {
-    minWidth: layout.minTouchTarget,
+    minWidth: 0,
     minHeight: layout.minTouchTarget,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    paddingHorizontal: 4,
     paddingVertical: 8,
+  },
+  tabIconShell: {
+    minWidth: layout.minTouchTarget - spacing.compactGap,
+    height: layout.minTouchTarget - spacing.compactGap,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconShellActive: {
+    borderWidth: 1,
+    borderColor: borders.primary,
+    backgroundColor: surfaces.primarySoft,
   },
   tabLabel: {
     ...typography.label,
+    maxWidth: '100%',
+    textAlign: 'center',
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '500',
     color: colours.textSecondary,
     letterSpacing: 0.6,
   },
   tabLabelActive: {
+    fontWeight: '600',
     color: colours.primary,
   },
   centerSpacer: {

@@ -18,13 +18,28 @@ class ReportService:
         report_path.write_text(self._render_html(inspection, summary), encoding="utf-8")
         return f"/api/reports/{inspection.id}"
 
+    def _normalise_condition(self, value: str | None) -> str:
+        normalised = (value or "pending").strip().lower()
+        mapping = {
+            "pending": "Pending",
+            "na": "N/A",
+            "good": "Good",
+            "fair": "Fair",
+            "poor": "Poor",
+            "damaged": "Poor",
+            "professional_clean": "Good",
+        }
+        return mapping.get(normalised, normalised.replace("_", " ").title() or "Pending")
+
     def _render_html(self, inspection: InspectionRecord, summary: str) -> str:
         room_sections = []
         for room in inspection.rooms:
-            items = "".join(
-                f"<tr><td>{escape(item.name)}</td><td>{escape(item.condition or 'pending')}</td><td>{escape(item.description or 'Pending confirmation')}</td></tr>"
-                for item in room.items
-            )
+            item_rows = []
+            for item in room.items:
+                item_rows.append(
+                    f"<tr><td>{escape(item.name)}</td><td>{escape(self._normalise_condition(item.condition))}</td><td>{escape(item.description or 'Pending confirmation')}</td></tr>"
+                )
+            items = "".join(item_rows)
             room_sections.append(
                 f"""
                 <section>
@@ -91,7 +106,7 @@ class ReportService:
               <h2>General Observations</h2>
               <p><strong>Smoke alarms:</strong> {"Yes" if inspection.sections.general_observations.smoke_alarms else "No"}</p>
               <p><strong>CO detector:</strong> {"Yes" if inspection.sections.general_observations.co_detector else "No"}</p>
-              <p><strong>Overall cleanliness:</strong> {escape(inspection.sections.general_observations.overall_cleanliness)}</p>
+              <p><strong>Overall cleanliness:</strong> {escape(self._normalise_condition(inspection.sections.general_observations.overall_cleanliness))}</p>
               <p><strong>Additional notes:</strong> {escape(inspection.sections.general_observations.additional_notes or 'None')}</p>
             </section>
           </body>

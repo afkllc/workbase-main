@@ -3,6 +3,8 @@ import {useCallback, useState} from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import {Picker} from '@react-native-picker/picker';
 import {Image, StyleSheet, Text, View} from 'react-native';
+import {AiPill} from '../../../../src/components/AiPill';
+import {EmptyState} from '../../../../src/components/EmptyState';
 import {StatusSummaryRow} from '../../../../src/components/StatusSummaryRow';
 import {Button, Card, Label, LoadingRow, Notice, Screen, SuccessBanner, TextField} from '../../../../src/components/ui';
 import {analysePhoto, getInspection, updateItem} from '../../../../src/lib/api';
@@ -155,7 +157,10 @@ export default function RoomCaptureScreen() {
         {inspection && room ? (
           <>
             <Card>
-              <Text style={styles.sectionTitle}>Capture actions</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Upload photo for AI analysis</Text>
+                <AiPill />
+              </View>
               <Button label={saving ? 'Working...' : 'Upload photo'} onPress={() => void pickPhoto()} disabled={saving} />
               <Button label="Open review" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} disabled={saving} />
               <Text style={styles.helperText}>Upload a photo for AI analysis, then review or confirm the suggested updates below.</Text>
@@ -163,7 +168,7 @@ export default function RoomCaptureScreen() {
 
             {suggestion ? (
               <Card>
-                <StatusSummaryRow subtitle={suggestion.suggested_item_name} statusValue={suggestion.confidence} title="AI suggestion" />
+                <StatusSummaryRow subtitle={suggestion.suggested_item_name} statusValue={suggestion.confidence} title="AI suggestion" titleAdornment={<AiPill />} />
                 {suggestion.previewUri ? <Image source={{uri: suggestion.previewUri}} style={styles.preview} /> : null}
                 <Label>Assign to item</Label>
                 <View style={styles.pickerShell}>
@@ -192,15 +197,19 @@ export default function RoomCaptureScreen() {
 
             <Card>
               <Text style={styles.sectionTitle}>Checklist</Text>
-              {room.items.map((item) => (
-                <View key={item.id} style={styles.itemRow}>
-                  <StatusSummaryRow
-                    subtitle={item.description || 'No description yet.'}
-                    statusValue={item.is_confirmed ? 'confirmed' : item.condition ?? 'pending'}
-                    title={item.name}
-                  />
-                </View>
-              ))}
+              {room.items.length === 0 ? (
+                <EmptyState icon="inbox" message="No checklist items for this room." />
+              ) : (
+                room.items.map((item) => (
+                  <View key={item.id} style={styles.itemRow}>
+                    <StatusSummaryRow
+                      subtitle={item.description || 'No description yet.'}
+                      statusValue={item.is_confirmed ? 'confirmed' : item.condition ?? 'pending'}
+                      title={item.name}
+                    />
+                  </View>
+                ))
+              )}
             </Card>
 
             <Button label="Back to inspection" onPress={() => router.push(`/inspection/${inspection.id}`)} />
@@ -212,6 +221,12 @@ export default function RoomCaptureScreen() {
 }
 
 const styles = StyleSheet.create({
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   sectionTitle: {
     ...typography.cardTitle,
     color: colours.textPrimary,

@@ -1,246 +1,194 @@
-# Workbase AI Blueprint v2
+# Workbase AI — MVP Definition
 
-**Date:** 28 March 2026  
-**Status:** Active  
-**Stack decision:** React admin dashboard + Expo mobile app + Python/FastAPI backend
+**Epic ID:** WB-MVP-001
+**Status:** In progress
+**Last updated:** April 2026
+**Stack:** React admin dashboard + Expo mobile app + FastAPI backend
+**Related:** `docs/workbase-ai-blueprint-v2.md`
 
-## 1. Reality Check
+---
 
-The repo did not contain a mobile app, a backend, storage, auth, or report generation. It contained a single mocked frontend prototype.
+## What This Document Is
 
-That matters because the old plan assumed we had already committed to:
+This is the single source of truth for what the MVP must do and what
+done looks like. It is not a technical spec — the blueprint covers
+architecture. This doc answers one question: what must work, for whom,
+and to what standard, before we consider the MVP complete?
 
-- React Native / Expo
-- FastAPI
-- Postgres
-- object storage
-- background jobs
-- PDF generation
-- live AI services
+---
 
-That was too much architecture for the actual codebase.
+## MVP Goal
 
-## 2. Revised Product Direction
+Demonstrate a complete, believable property inventory workflow to an
+internal team audience within two weeks. Every part of the core loop
+must work end-to-end without hand-holding, look professional enough to
+show to a real letting agent, and feel like a coherent product rather
+than a collection of screens.
 
-We are still building the same product:
+---
 
-- property inventory inspections
-- template-driven room checklists
-- AI-assisted capture
-- report generation
+## Core Loop (must work flawlessly)
 
-But we are building it in the correct order.
+This is the sequence a clerk follows on mobile. If any step breaks,
+stalls, or looks unfinished, the MVP is not ready.
 
-The product should now evolve in four layers:
+1. Open the app and see the inspection list
+2. Create a new inspection from a template
+3. Navigate to the inspection overview and understand what to do next
+4. Open each room and work through checklist items
+5. Upload at least one photo per room and receive an AI suggestion
+6. Return to the inspection overview and see progress update
+7. Open review when all rooms are complete
+8. Confirm items and generate the report
+9. View the generated report
+10. Archive the report from the mobile reports screen
 
-1. Permanent React admin dashboard for letting agents.
-2. Expo mobile app for clerks in the field.
-3. FastAPI service that owns templates, inspections, rooms, items, and report generation.
-4. Real persistence, auth, uploads, and AI integration.
+If a clerk can complete this loop without being told what to do at any
+step, the mobile MVP is ready.
 
-## 3. Current Architecture
+---
 
-```text
-workbase/
-├─ frontend/     React + Vite admin dashboard
-├─ mobile/       Expo managed clerk app
-├─ backend/      FastAPI
-├─ templates/    JSON room and item schemas
-└─ docs/         Product and delivery docs
-```
+## What Must Work Flawlessly for the Internal Demo
 
-### Frontend
+### 1. Mobile end-to-end flow
 
-The frontend is the permanent agency admin dashboard.
+The flow from empty inspection to generated report must feel seamless
+and guided. Specifically:
 
-Responsibilities:
+- Every screen must communicate where the user is in the overall journey
+- Every completed action must visibly update the relevant screen
+- Every screen must have a clear primary next action — no dead ends
+- Back navigation must be consistent and predictable across all screens
+- The bottom navigation must render correctly on all screen sizes with
+  no label overflow or overlapping content
 
-- create inspections
-- view inspection progress
-- review generated content
-- save fixed sections where needed
-- trigger report generation
-- open reports
+Acceptance bar: a first-time user completes the full loop without
+asking what to do next.
 
-Important rule:
+### 2. Visual polish
 
-- the frontend should not own business rules that belong to inspections, rooms, or reports
+The app must look professional enough that showing it to a letting
+agent would not cause embarrassment. Specifically:
 
-### Mobile
+- All colours reference `src/theme/colours.ts` — zero hardcoded values
+- No snake_case or internal strings visible anywhere in the UI
+- No blank screens, missing states, or unstyled error messages
+- Back buttons are consistently positioned across all stack screens
+- The bottom navigation renders correctly at all screen widths
+- The AI icon is implemented and visible on relevant mobile screens
 
-The mobile app is the clerk capture interface.
+Acceptance bar: a non-technical person describes the app as polished
+and intentional.
 
-Responsibilities:
+### 3. Report quality and readability
 
-- list inspections
-- open room lists
-- upload inspection photos
-- trigger room scans using the current backend route
-- save fixed sections
-- review and confirm item suggestions
-- generate and open reports
+The generated report must be readable and credible. Specifically:
 
-### Backend
+- Report content is structured clearly by room and section
+- Condition labels are normalised (`N/A`, `Good`, `Fair`, `Poor`)
+- The report opens reliably from the mobile reports screen
+- The report is readable without requiring zoom or horizontal scroll
 
-The backend is the system of record.
+Acceptance bar: the report could be shown to a letting agent as an
+example output without apology.
 
-Responsibilities:
+### 4. Archive and delete on mobile
 
-- load templates
-- create inspections from templates
-- manage room and item state
-- accept section updates
-- provide AI-analysis endpoints
-- generate reports
+Clerks must be able to archive reports from the mobile app. Specifically:
 
-Current implementation:
+- An archive action is available on the reports screen
+- A confirmation prompt appears before archiving
+- The report disappears from the list immediately after archiving
+- The backend `PATCH /api/reports/{inspection_id}/archive` endpoint
+  exists and is wired to the mobile action
 
-- SQLite-backed store behind a service layer
-- built-in templates loaded from JSON files
-- custom templates stored in SQLite and merged with built-ins
+Acceptance bar: archiving a report works in one tap with no visible
+errors.
 
-Future implementation:
+---
 
-- swap the store for Postgres repositories without changing frontend contracts
+## What Is Explicitly Not Required for This MVP
 
-### Templates
+The following are real product requirements but are deferred beyond
+this demo:
 
-Templates are first-class product assets, not static UI content.
+- PDF export (frontend only, next epic)
+- Report editing on the web dashboard (next epic)
+- Live AI model providers (Gemini/Groq) — mock is sufficient for demo
+- Auth and user accounts
+- Production Postgres database
+- Object storage for photos
+- Offline sync
+- Native video upload
+- Branded PDF output
+- Multi-tenancy
 
-Responsibilities:
+Do not build these. Do not stub them in a way that implies they are
+coming immediately. Keep scope clean.
 
-- define required rooms
-- define per-room items
-- define AI hints
-- define fixed sections like meters, keys, and general observations
+---
 
-The backend expands templates into real inspections. The frontend only renders what the backend sends.
+## Demo Readiness Checklist
 
-## 4. Data Flow
+The MVP is ready when every item below is true:
 
-The core data flow is:
+**Mobile flow**
+- [ ] Full core loop completable without guidance
+- [ ] No dead ends — every screen has a clear next action
+- [ ] Progress updates visibly after each room is completed
+- [ ] Back navigation is consistent across all stack screens
+- [ ] Bottom nav renders correctly on small screens — no overflow
 
-1. User selects a template.
-2. Backend resolves the matching template key.
-3. Backend creates inspection, rooms, and items.
-4. Frontend displays those rooms and items.
-5. Capture actions send updates back to FastAPI.
-6. Review confirms items.
-7. Report generation reads inspection state and outputs a document.
+**Visual quality**
+- [ ] Zero hardcoded hex values outside `src/theme/colours.ts`
+- [ ] Zero snake_case strings visible in the UI
+- [ ] AI icon implemented on relevant mobile screens
+- [ ] No blank, broken, or placeholder states on any primary screen
 
-This is the correct long-term flow even when storage and AI become more advanced.
+**Reports**
+- [ ] Report generates successfully from the review screen
+- [ ] Report is readable and well-structured
+- [ ] Report opens from the mobile reports screen without errors
 
-## 5. AI Strategy
+**Archive**
+- [ ] Archive action present on mobile reports screen
+- [ ] Confirmation prompt shown before archiving
+- [ ] Report removed from list immediately after archiving
+- [ ] Backend archive endpoint exists and responds correctly
 
-Do not wire the UI directly to a model provider.
+**Technical**
+- [ ] `npm run typecheck` passes
+- [ ] `npx expo export --platform web` passes
+- [ ] Backend starts cleanly with no import errors
+- [ ] Full core loop works end-to-end with backend running locally
 
-All AI work must stay behind backend service boundaries.
+---
 
-Current state:
+## What Comes After This MVP
 
-- provider-backed mocked AI service selected by backend config
+Once the internal demo passes the checklist above, the next phase is:
 
-Future state:
+**WB-MVP-002: Persistence and Auth**
+- Postgres migration
+- JWT auth
+- User-scoped inspections
 
-- real vision model for photo analysis
-- real transcription + structuring pipeline for room scan/video mode
-- optional note enhancement for manual edits
+**WB-MVP-003: Real Capture Services**
+- File upload storage
+- Live AI provider (Gemini)
+- Real photo analysis and room scan pipeline
 
-The important part is the contract, not the temporary implementation.
-
-## 6. Report Strategy
-
-Current state:
-
-- backend generates an HTML report for local validation
-
-Why this is correct:
-
-- it proves end-to-end flow now
-- it keeps the report step testable
-- it avoids introducing docx/pdf complexity before the data model is stable
-
-Future state:
-
-- Word or HTML template rendering
+**WB-MVP-004: Production Reports**
 - PDF export
-- proper branding and formatting
+- Branded layout
+- Frontend report editing and delivery
 
-## 7. What We Are Not Doing Yet
+---
 
-Not now:
+## Engineering Rules (unchanged from blueprint)
 
-- offline sync
-- multi-tenancy
-- agency admin tooling
-- background queues
-- production auth
-- production storage
-- live video upload pipeline
-
-These are real later phases, not MVP day-one requirements.
-
-## 8. Current MVP Slice
-
-The repo should support this local flow across web and mobile:
-
-1. Create an inspection from a template.
-2. Open rooms and inspect items from either client.
-3. Simulate photo analysis or room scan.
-4. Save meter, key, and general sections.
-5. Review and confirm items.
-6. Generate a local report.
-
-If that flow breaks, the app is not yet a functioning MVP.
-
-## 9. Next Build Order
-
-### Phase 1: Complete the local vertical slice
-
-- keep the React and FastAPI contract stable
-- remove remaining mock-only frontend assumptions
-- keep built-in templates in JSON and custom templates in SQLite
-
-### Phase 2: Real persistence and auth
-
-- Postgres
-- SQLAlchemy or SQLModel
-- Alembic
-- basic JWT auth
-
-### Phase 3: Real capture and AI
-
-- file upload storage
-- photo analysis provider
-- real room-scan or video processing endpoint
-
-### Phase 4: Production-grade reports
-
-- HTML to PDF or docx to PDF pipeline
-- branded layout
-- delivery and download handling
-
-## 10. Hard Rules
-
-- Do not let the frontend own template logic that belongs on the backend.
-- Do not let the mobile app invent routes that the backend does not expose.
-- Do not couple the UI to a specific AI provider.
-- Do not introduce Postgres-specific assumptions into the frontend contract.
-- Keep built-in templates versioned as files and custom templates editable in SQLite.
-
-## 11. Decision Summary
-
-Clear version:
-
-- Frontend: React admin dashboard in `frontend/`
-- Mobile: Expo managed app in `mobile/`
-- Backend: FastAPI in `backend/`
-- Templates: JSON in `templates/`
-- Current persistence: SQLite
-- Current AI: provider-backed mock selected through backend config
-- Current report output: HTML
-- Future persistence: Postgres
-- Future AI: provider-backed
-- Future reports: branded PDF
-
-That is the architecture the repo should follow from here.
+- Mobile app must not invent routes the backend does not expose
+- Frontend must not own business logic belonging to inspections or reports
+- AI must stay behind backend service boundaries
+- All colours must reference the centralised theme file
+- Built-in templates remain file-based and read-only

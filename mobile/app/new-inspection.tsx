@@ -1,10 +1,10 @@
 import Feather from '@expo/vector-icons/Feather';
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
 import {useCallback, useMemo, useState} from 'react';
-import {Alert, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import {Button, Card, Label, LoadingRow, Notice, Screen, TextField} from '../src/components/ui';
-import {createInspection, deleteTemplate, listTemplates} from '../src/lib/api';
+import {createInspection, listTemplates} from '../src/lib/api';
 import type {CreateInspectionPayload, TemplateSummary} from '../src/lib/types';
 import {formatDisplayName} from '../src/lib/utils';
 import {AppStackScreen} from '../src/navigation/AppStackScreen';
@@ -160,21 +160,6 @@ export default function NewInspectionScreen() {
     }
   }
 
-  async function handleDeleteTemplate(templateKey: string) {
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteTemplate(templateKey);
-      const refreshed = await listTemplates();
-      setTemplates(refreshed);
-      setForm((current) => ({...current, template_key: refreshed[0]?.key ?? ''}));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete template.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <>
       <AppStackScreen fallbackBackLabel="Inspections" fallbackHref="/inspections" title="New Inspection" />
@@ -249,43 +234,9 @@ export default function NewInspectionScreen() {
                       <Text style={styles.templateBadgeText}>{selectedTemplate.source === 'custom' ? 'Custom' : 'Built-in'}</Text>
                     </View>
                   </View>
-
-                  {selectedTemplate.is_editable ? (
-                    <View style={styles.templateActions}>
-                      <Button label="Edit template" variant="secondary" onPress={() => router.push(`/template-builder?templateKey=${selectedTemplate.key}`)} />
-                      <Button
-                        disabled={saving}
-                        label={saving ? 'Deleting...' : 'Delete template'}
-                        variant="destructive"
-                        onPress={() =>
-                          Alert.alert('Delete template', 'This will permanently remove the selected custom template.', [
-                            {text: 'Cancel', style: 'cancel'},
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: () => {
-                                void handleDeleteTemplate(selectedTemplate.key);
-                              },
-                            },
-                          ])
-                        }
-                      />
-                    </View>
-                  ) : null}
                 </View>
               ) : null}
             </Card>
-
-            <Pressable onPress={() => router.push('/template-builder')} style={({pressed}) => [styles.createTemplateCard, pressed ? styles.createTemplateCardPressed : null]}>
-              <View style={styles.createTemplateIcon}>
-                <Feather color={colours.surface} name="plus" size={20} />
-              </View>
-              <View style={styles.createTemplateCopy}>
-                <Text style={styles.sectionTitle}>Create your own template</Text>
-                <Text style={styles.createTemplateBody}>Define rooms, checklist items, and AI hints tailored to the property.</Text>
-              </View>
-              <Feather color={colours.primary} name="chevron-right" size={18} />
-            </Pressable>
 
             <Card>
               <Label>Property address</Label>
@@ -419,37 +370,5 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colours.primary,
     letterSpacing: 0.6,
-  },
-  templateActions: {
-    gap: spacing.tightGap,
-  },
-  createTemplateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.compactGap,
-    borderRadius: radii.card,
-    borderWidth: 1,
-    borderColor: borders.primary,
-    backgroundColor: colours.surface,
-    padding: spacing.cardPadding,
-  },
-  createTemplateCardPressed: {
-    backgroundColor: surfaces.primarySoft,
-  },
-  createTemplateIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.icon,
-    backgroundColor: colours.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  createTemplateCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  createTemplateBody: {
-    ...typography.supporting,
-    color: colours.textSecondary,
   },
 });

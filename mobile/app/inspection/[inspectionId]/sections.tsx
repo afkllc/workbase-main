@@ -2,12 +2,12 @@ import {useEffect, useState} from 'react';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import {Picker} from '@react-native-picker/picker';
 import {StyleSheet, Text, TextInput, View} from 'react-native';
-import {Button, Card, Label, LoadingRow, Notice, Screen, TextField, ToggleRow} from '../../../src/components/ui';
+import {Button, Card, Label, LoadingRow, Notice, Screen, SuccessBanner, TextField, ToggleRow} from '../../../src/components/ui';
 import {getInspection, updateSections} from '../../../src/lib/api';
 import type {InspectionRecord} from '../../../src/lib/types';
 import {formatDisplayName} from '../../../src/lib/utils';
 import {AppStackScreen} from '../../../src/navigation/AppStackScreen';
-import {borders, colours, radii, spacing, surfaces, typography} from '../../../src/theme';
+import {borders, colours, layout, radii, spacing, surfaces, typography} from '../../../src/theme';
 
 export default function SectionsScreen() {
   const router = useRouter();
@@ -16,6 +16,8 @@ export default function SectionsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [shouldNavigateBackAfterSuccess, setShouldNavigateBackAfterSuccess] = useState(false);
   const [initialSectionsSnapshot, setInitialSectionsSnapshot] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,11 +69,22 @@ export default function SectionsScreen() {
         general_observations: inspection.sections.general_observations,
       });
       setInitialSectionsSnapshot(JSON.stringify(inspection.sections));
-      router.back();
+      setSuccessMessage('Sections saved');
+      setShouldNavigateBackAfterSuccess(true);
     } catch (err) {
+      setSuccessMessage(null);
+      setShouldNavigateBackAfterSuccess(false);
       setError(err instanceof Error ? err.message : 'Failed to save sections.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function handleSuccessBannerDismiss() {
+    setSuccessMessage(null);
+    if (shouldNavigateBackAfterSuccess) {
+      setShouldNavigateBackAfterSuccess(false);
+      router.back();
     }
   }
 
@@ -88,6 +101,7 @@ export default function SectionsScreen() {
       />
       <Screen includeTopInset={false} showHeader={false}>
         {error ? <Notice>{error}</Notice> : null}
+        {successMessage ? <SuccessBanner message={successMessage} onDismiss={handleSuccessBannerDismiss} /> : null}
         {loading ? <LoadingRow label="Loading sections" /> : null}
         {inspection ? (
           <>
@@ -114,7 +128,7 @@ export default function SectionsScreen() {
               <Text style={styles.sectionBody}>Record the quantities handed over for entry and access items.</Text>
               {Object.entries(inspection.sections.keys_and_fobs).map(([label, quantity]) => (
                 <View key={label} style={styles.keyRow}>
-                  <Text style={styles.keyLabel}>{formatDisplayName(label)}</Text>
+                  <Text ellipsizeMode="tail" numberOfLines={1} style={styles.keyLabel}>{formatDisplayName(label)}</Text>
                   <TextInput
                     keyboardType="numeric"
                     onChangeText={(value) =>
@@ -188,6 +202,7 @@ const styles = StyleSheet.create({
     borderColor: borders.subtle,
     borderWidth: 1,
     borderRadius: radii.input,
+    minHeight: layout.minTouchTarget,
     paddingHorizontal: 12,
     paddingVertical: 12,
     color: colours.textPrimary,

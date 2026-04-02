@@ -1,6 +1,6 @@
-import {useState} from 'react';
+﻿import {useState} from 'react';
 import {FieldLabel, Input, ToggleRow} from '../components/fields';
-import {formatCondition, Header, SectionCard} from '../components/layout';
+import {formatCondition, Header, PageBody, SectionCard} from '../components/layout';
 import type {InspectionRecord} from '../types';
 
 export function MeterReadingsScreen({
@@ -19,7 +19,7 @@ export function MeterReadingsScreen({
   return (
     <div>
       <Header title="Meter readings" subtitle="Record current meter values for this property." showBack onBack={onBack} />
-      <div className="space-y-5 px-4 py-5">
+      <PageBody className="max-w-4xl">
         <SectionCard>
           <div className="space-y-4">
             <Input label="Gas" value={value.gas} onChange={(gas) => setValue({...value, gas})} />
@@ -27,10 +27,10 @@ export function MeterReadingsScreen({
             <Input label="Water" value={value.water} onChange={(water) => setValue({...value, water})} />
           </div>
         </SectionCard>
-        <button type="button" onClick={() => onSave(value)} disabled={saving} className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="button" onClick={() => onSave(value)} disabled={saving} className="wb-btn-primary w-full">
           Save meter readings
         </button>
-      </div>
+      </PageBody>
     </div>
   );
 }
@@ -51,7 +51,7 @@ export function KeysScreen({
   return (
     <div>
       <Header title="Keys and fobs" subtitle="Record how many of each key type are being handed over." showBack onBack={onBack} />
-      <div className="space-y-5 px-4 py-5">
+      <PageBody className="max-w-4xl">
         <SectionCard>
           <div className="space-y-4">
             {Object.entries(value).map(([label, quantity]) => (
@@ -62,16 +62,16 @@ export function KeysScreen({
                   min="0"
                   value={quantity}
                   onChange={(event) => setValue({...value, [label]: Number(event.target.value)})}
-                  className="w-24 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  className="wb-field w-24"
                 />
               </div>
             ))}
           </div>
         </SectionCard>
-        <button type="button" onClick={() => onSave(value)} disabled={saving} className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="button" onClick={() => onSave(value)} disabled={saving} className="wb-btn-primary w-full">
           Save keys
         </button>
-      </div>
+      </PageBody>
     </div>
   );
 }
@@ -92,7 +92,7 @@ export function GeneralScreen({
   return (
     <div>
       <Header title="General observations" subtitle="Safety checks, cleanliness, and additional notes." showBack onBack={onBack} />
-      <div className="space-y-5 px-4 py-5">
+      <PageBody className="max-w-4xl">
         <SectionCard>
           <div className="space-y-4">
             <ToggleRow label="Smoke alarms present" checked={value.smoke_alarms} onChange={(smoke_alarms) => setValue({...value, smoke_alarms})} />
@@ -102,7 +102,7 @@ export function GeneralScreen({
               <select
                 value={value.overall_cleanliness}
                 onChange={(event) => setValue({...value, overall_cleanliness: event.target.value})}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                className="wb-field"
               >
                 {['professional_clean', 'good', 'fair', 'poor'].map((option) => (
                   <option key={option} value={option}>
@@ -117,15 +117,15 @@ export function GeneralScreen({
                 value={value.additional_notes}
                 onChange={(event) => setValue({...value, additional_notes: event.target.value})}
                 rows={4}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                className="wb-field"
               />
             </div>
           </div>
         </SectionCard>
-        <button type="button" onClick={() => onSave(value)} disabled={saving} className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="button" onClick={() => onSave(value)} disabled={saving} className="wb-btn-primary w-full">
           Save observations
         </button>
-      </div>
+      </PageBody>
     </div>
   );
 }
