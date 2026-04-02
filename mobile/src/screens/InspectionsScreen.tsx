@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   progressText: {
     ...typography.supporting,
     color: colours.textSecondary,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -195,6 +195,6 @@ const styles = StyleSheet.create({
   footerCopy: {
     ...typography.supporting,
     color: colours.primary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
 });

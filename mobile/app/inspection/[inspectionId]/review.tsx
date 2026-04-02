@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.tightGap / 2,
     color: colours.accent,
     ...typography.supporting,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   actionRow: {
     flexDirection: 'row',
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     ...typography.label,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: colours.textSecondary,
   },
   filterChipTextActive: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   itemName: {
     color: colours.textPrimary,
     ...typography.body,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   itemDescription: {
     color: colours.textSecondary,
@@ -329,11 +329,11 @@ const styles = StyleSheet.create({
   itemMeta: {
     color: colours.textSecondary,
     ...typography.label,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   confidenceLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   confidenceHigh: {
     color: colours.success,

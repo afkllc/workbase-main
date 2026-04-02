@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: colours.textSecondary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   summaryPlaceholder: {
     ...typography.supporting,

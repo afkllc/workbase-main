@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   detailValue: {
     ...typography.body,
     color: colours.textPrimary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   supportText: {
     ...typography.body,

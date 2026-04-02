@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   progressValue: {
     ...typography.supporting,
     color: colours.textPrimary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   progressTrack: {
     height: 10,
@@ -212,6 +212,6 @@ const styles = StyleSheet.create({
   roomAction: {
     ...typography.supporting,
     color: colours.primary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
 });

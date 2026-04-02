@@ -41,30 +41,32 @@ export const typography = {
   screenTitle: {
     fontSize: 30,
     lineHeight: 36,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   sectionTitle: {
     fontSize: 20,
     lineHeight: 26,
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
   },
   cardTitle: {
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
   },
   body: {
     fontSize: 15,
     lineHeight: 22,
+    fontFamily: 'Inter_400Regular',
   },
   supporting: {
     fontSize: 13,
     lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
   },
   label: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
   },
@@ -78,6 +80,8 @@ export const surfaces = {
   destructiveSoft: withAlpha(colours.destructive, 0.1),
   neutralSoft: withAlpha(colours.textSecondary, 0.1),
 } as const;
+
+export const placeholderText = withAlpha(colours.textSecondary, 0.62);
 
 export const borders = {
   subtle: colours.border,

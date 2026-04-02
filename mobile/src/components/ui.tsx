@@ -15,7 +15,7 @@ import {
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {formatDisplayName, statusTone} from '../lib/utils';
-import {borders, colours, radii, shadows, spacing, surfaces, typography, withAlpha} from '../theme';
+import {borders, colours, placeholderText, radii, shadows, spacing, surfaces, typography, withAlpha} from '../theme';
 
 export function Screen({
   title,
@@ -125,7 +125,7 @@ export function TextField({
       multiline={multiline}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={colours.textSecondary}
+      placeholderTextColor={placeholderText}
       style={[styles.input, multiline ? styles.multilineInput : null]}
       value={value}
     />
@@ -271,17 +271,17 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: colours.surface,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     fontSize: 15,
   },
   secondaryButtonText: {
     color: colours.textPrimary,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     fontSize: 15,
   },
   destructiveButtonText: {
     color: colours.surface,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     fontSize: 15,
   },
   label: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   successBannerText: {
     color: colours.success,
     ...typography.body,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   toggleRow: {
     backgroundColor: colours.surface,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   toggleLabel: {
     color: colours.textPrimary,
     ...typography.body,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     flex: 1,
     paddingRight: 12,
   },

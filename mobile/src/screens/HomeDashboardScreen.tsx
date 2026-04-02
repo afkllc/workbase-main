@@ -8,7 +8,7 @@ import {Button, Card, LoadingRow, Notice, Screen, StatusBadge} from '../componen
 import {listInspections} from '../lib/api';
 import type {InspectionSummary} from '../lib/types';
 import {formatDisplayName} from '../lib/utils';
-import {borders, colours, radii, spacing, surfaces, typography, withAlpha} from '../theme';
+import {borders, colours, placeholderText, radii, spacing, surfaces, typography, withAlpha} from '../theme';
 
 const QUICK_ACTION_TILE_WIDTH = 142;
 
@@ -167,7 +167,7 @@ export default function HomeDashboardScreen() {
           }}
           onSubmitEditing={handleCommand}
           placeholder="Try: inspect 12 High Street tomorrow"
-          placeholderTextColor={colours.textSecondary}
+          placeholderTextColor={placeholderText}
           returnKeyType="go"
           style={styles.commandInput}
           value={command}

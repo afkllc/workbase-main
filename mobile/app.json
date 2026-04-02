@@ -42,7 +42,8 @@
         {
           "photosPermission": "Allow Workbase to access your photo library so inspection images can be uploaded."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "workbase-mobile",
     "extra": {

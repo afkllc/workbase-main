@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   linkButtonText: {
     color: colours.surface,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   missingReportBlock: {
     gap: 10,

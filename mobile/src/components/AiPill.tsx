@@ -1,11 +1,11 @@
 import Feather from '@expo/vector-icons/Feather';
 import {StyleSheet, Text, View} from 'react-native';
-import {colours, radii, spacing, typography} from '../theme';
+import {colours, radii, typography, withAlpha} from '../theme';
 
 export function AiPill() {
   return (
     <View style={styles.pill}>
-      <Feather color={colours.surface} name="zap" size={12} />
+      <Feather color={colours.aiIndicator} name="zap" size={12} />
       <Text style={styles.label}>AI</Text>
     </View>
   );
@@ -18,13 +18,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 4,
     borderRadius: radii.pill,
-    backgroundColor: colours.primary,
+    borderWidth: 1,
+    borderColor: withAlpha(colours.aiIndicator, 0.3),
+    backgroundColor: withAlpha(colours.aiIndicator, 0.12),
     paddingHorizontal: 8,
     paddingVertical: 5,
   },
   label: {
     ...typography.label,
-    color: colours.surface,
+    color: colours.aiIndicator,
     letterSpacing: 0.6,
   },
 });

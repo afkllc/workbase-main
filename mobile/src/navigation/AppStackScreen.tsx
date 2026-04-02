@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   backLabel: {
     flexShrink: 1,
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    fontWeight: '600',
   },
 });

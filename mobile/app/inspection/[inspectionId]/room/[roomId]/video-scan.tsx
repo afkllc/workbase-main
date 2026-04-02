@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   successText: {
     color: colours.success,
     ...typography.body,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   itemRow: {
     borderRadius: 16,

@@ -107,12 +107,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flexShrink: 1,
     fontSize: 11,
-    fontWeight: '500',
     color: colours.textSecondary,
     letterSpacing: 0.6,
   },
   tabLabelActive: {
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: colours.primary,
   },
   centerSpacer: {
