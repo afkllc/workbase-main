@@ -64,6 +64,27 @@ a `chip` variant pattern. Refactor all chip usages across the app to use it.
 
 ---
 
+### [mobile + backend] Automated update tracker in Settings
+
+**Detail:** Display the latest GitHub release name and version in the
+Settings screen, updated automatically on each release. Clean
+implementation: add a backend endpoint `GET /api/version` that proxies
+the GitHub Releases API (`/repos/{owner}/{repo}/releases/latest`) and
+returns `{ version: string, release_name: string, released_at: string }`.
+Mobile fetches this on Settings mount and displays alongside the existing
+`Constants.expoConfig.version`. Show a subtle loading state and fail
+silently (fall back to package.json version) if the request fails.
+**Preconditions:**
+
+- GitHub personal access token stored securely as a backend environment
+  variable — never in the mobile app binary
+- Backend `/api/version` route implemented and returning correct shape
+- Repo is on a consistent release tagging pattern (e.g. v1.0.1)
+  **Security note:** Never call the GitHub API directly from mobile.
+  Always proxy through the backend.
+
+---
+
 ### [mobile] Swipe-to-archive on inspections list
 
 **Surface:** Mobile — `mobile/src/screens/InspectionsScreen.tsx`
