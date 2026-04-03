@@ -8,7 +8,7 @@ class MockProvider(AIProvider):
     def transcribe_audio(self, *, file_name: str, room_name: str, property_address: str) -> str:
         return (
             f"Walk-through note for {room_name} at {property_address}: the clerk described a calm sweep of the room, "
-            f"called out minor cosmetic wear, and confirmed that the key fixtures shown in {file_name} were visible."
+            f"called out minor cosmetic wear, and confirmed that the key fixtures shown were visible."
         )
 
     def describe_images(
@@ -22,8 +22,8 @@ class MockProvider(AIProvider):
     ) -> str:
         hint_fragment = ", ".join(ai_hints[:2]) if ai_hints else item_name.lower()
         return (
-            f"{item_name} in {room_name} at {property_address} shows minor scuff marks and light everyday wear near "
-            f"{hint_fragment}. No structural damage is visible in {file_name}, and the finish appears serviceable for check-in reporting."
+            f"The {item_name} in the {room_name} shows minor scuff marks and light everyday wear near "
+            f"{hint_fragment}. No structural damage is visible, and the finish appears serviceable for check-in reporting."
         )
 
     def generate_report(self, *, inspection: InspectionRecord) -> str:
