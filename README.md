@@ -6,7 +6,6 @@ Workbase now has three top-level parts:
 - `mobile/`: Expo managed clerk capture app
 - `backend/`: FastAPI API and report generator
 
-
 ## Current backend routes
 
 - `GET /health`
@@ -82,7 +81,7 @@ The current FastAPI scaffold does not require runtime secrets for local developm
 cd ~/onedrive/Documents/workbase-main/backend
 python -m venv .venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.venv\Scripts\Activate.ps1 
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -109,7 +108,7 @@ npm start
 
 - list inspections
 - create inspections
-- open inspection detail
+- inspection detail
 - review room progress
 - update fixed sections
 - confirm items

@@ -133,7 +133,7 @@ function hasUsableAnalysisResult(condition: string | null | undefined, descripti
   return Boolean(condition && description && description.trim());
 }
 
-export default function RoomCaptureScreen() {
+export default function RoomScreen() {
   const router = useRouter();
   const {inspectionId, roomId} = useLocalSearchParams<{inspectionId: string; roomId: string}>();
   const captureSessionRef = useRef(0);

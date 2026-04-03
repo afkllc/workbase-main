@@ -171,6 +171,22 @@ findings, but it is not necessary to prove the MVP field workflow.
 
 ---
 
+### [backend] SQLite → Postgres migration + schema normalisation
+
+**Detail:** When migrating from SQLite to Postgres, normalise the
+inspections table by extracting frequently-queried fields from
+`payload_json` into proper columns: `property_address`, `property_type`,
+`status`, `completed_at`, `template_key`, and `clerk_id` (once auth lands).
+Keep a `payload_json` JSONB column for variable-shape room/item data.
+Write a migration script that reads existing SQLite rows and maps them
+to the new Postgres schema. Update all API queries accordingly.
+**Preconditions:**
+
+- Auth / user accounts implemented (clerk_id needs a users table to FK against)
+- Postgres instance provisioned
+
+---
+
 ### [mobile] Field-tool haptics and richer capture feedback
 
 **Detail:** Add haptics, shutter-style feedback, and stronger save
@@ -186,6 +202,23 @@ inspection capture feel distinct from admin and reporting flows through
 layout, navigation emphasis, and visual treatment. Important long-term,
 but too structural for the MVP unless the lighter field-mode refresh is
 insufficient.
+
+---
+
+### [mobile] Apple Developer License + EAS Dev Client setup
+
+**Detail:** Enrol in the Apple Developer Program ($99/year) at
+developer.apple.com. Once enrolled, set up EAS Build with a
+development profile to compile a custom dev client with
+react-native-reanimated and react-native-gesture-handler baked in.
+This unlocks the fluid animation work and removes the Expo Go
+constraint entirely. Re-introduce @gorhom/bottom-sheet to replace
+the current Animated/Modal bottom sheet implementation.
+**Preconditions:**
+
+- Apple Developer Program enrolment complete
+- EAS CLI configured with expo account
+- `expo-dev-client` installed
 
 ---
 

@@ -1,9 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
-import BottomSheet, {BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput} from '@gorhom/bottom-sheet';
-import type {BottomSheetBackdropProps} from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
 import {useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Animated, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions} from 'react-native';
 import {analysePhoto} from '../lib/api';
 import type {Condition, ItemRecord, ItemSource} from '../lib/types';
 import {formatCondition, statusTone} from '../lib/utils';
@@ -38,9 +36,9 @@ type ItemCaptureSheetProps = {
   initialPhotoName?: string;
 };
 
-const SHEET_SNAP_POINTS: Array<string | number> = ['50%', '92%'];
 const SHEET_CONDITIONS: SheetCondition[] = ['good', 'fair', 'poor', 'na'];
-const DescriptionInput = Platform.OS === 'web' ? TextInput : BottomSheetTextInput;
+const COLLAPSED_HEIGHT_RATIO = 0.5;
+const EXPANDED_HEIGHT_RATIO = 1;
 
 function normaliseCondition(condition: Condition | null | undefined): SheetCondition {
   if (condition === 'good' || condition === 'fair' || condition === 'poor' || condition === 'na') {
@@ -67,7 +65,7 @@ export function ItemCaptureSheet({
   initialDescription,
   initialPhotoName,
 }: ItemCaptureSheetProps) {
-  const bottomSheetRef = useRef<BottomSheet>(null);
+  const {height: screenHeight} = useWindowDimensions();
   const requestIdRef = useRef(0);
   const isClosingRef = useRef(false);
   const [captureState, setCaptureState] = useState<CaptureState>(mode === 'fallback' ? 'idle' : 'review');
@@ -77,10 +75,17 @@ export function ItemCaptureSheet({
   const [errorMessage, setErrorMessage] = useState<string | null>(initialError);
   const [analysisSucceeded, setAnalysisSucceeded] = useState(mode === 'edit' && item.source === 'photo_ai');
   const [photoName, setPhotoName] = useState<string | undefined>(initialPhotoName ?? initialAsset?.fileName ?? undefined);
+  const [isExpanded, setIsExpanded] = useState(mode !== 'fallback');
+  const expandProgress = useRef(new Animated.Value(mode === 'fallback' ? 0 : 1)).current;
 
   const isBusy = captureState === 'uploading' || captureState === 'analysing';
   const canSkipPhoto = !item.photo_required;
-  const initialIndex = mode === 'fallback' ? 0 : 1;
+  const collapsedHeight = Math.round(screenHeight * COLLAPSED_HEIGHT_RATIO);
+  const expandedHeight = Math.round(screenHeight * EXPANDED_HEIGHT_RATIO);
+  const sheetHeight = expandProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [collapsedHeight, expandedHeight],
+  });
 
   useEffect(() => {
     isClosingRef.current = false;
@@ -91,17 +96,18 @@ export function ItemCaptureSheet({
     };
   }, []);
 
-  function renderBackdrop(props: BottomSheetBackdropProps) {
-    return <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.24} pressBehavior="close" />;
-  }
+  useEffect(() => {
+    Animated.timing(expandProgress, {
+      toValue: isExpanded ? 1 : 0,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [expandProgress, isExpanded]);
 
   function dismissSheet() {
     isClosingRef.current = true;
     requestIdRef.current += 1;
-    bottomSheetRef.current?.close();
-  }
-
-  function handleClosed() {
     onDismiss();
   }
 
@@ -125,7 +131,7 @@ export function ItemCaptureSheet({
     setAnalysisSucceeded(params?.analysisSucceeded ?? false);
     setErrorMessage(params?.error ?? null);
     setCaptureState('review');
-    bottomSheetRef.current?.snapToIndex(1);
+    setIsExpanded(true);
   }
 
   async function startAnalysis(asset: ImagePicker.ImagePickerAsset) {
@@ -137,7 +143,7 @@ export function ItemCaptureSheet({
     setAnalysisSucceeded(false);
     setErrorMessage(null);
     setCaptureState('uploading');
-    bottomSheetRef.current?.snapToIndex(1);
+    setIsExpanded(true);
     setCaptureState('analysing');
 
     try {
@@ -354,7 +360,7 @@ export function ItemCaptureSheet({
 
           <View style={styles.descriptionField}>
             <Text style={styles.fieldLabel}>Description</Text>
-            <DescriptionInput
+            <TextInput
               multiline
               numberOfLines={4}
               onChangeText={setDescriptionDraft}
@@ -386,25 +392,19 @@ export function ItemCaptureSheet({
   }
 
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      animateOnMount
-      backdropComponent={renderBackdrop}
-      backgroundStyle={styles.sheetBackground}
-      enablePanDownToClose
-      handleIndicatorStyle={styles.handleIndicator}
-      index={initialIndex}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      onClose={handleClosed}
-      snapPoints={SHEET_SNAP_POINTS}
-    >
-      <BottomSheetScrollView contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
-        {captureState === 'idle' ? renderIdleState() : null}
-        {captureState === 'uploading' || captureState === 'analysing' ? renderAnalysingState() : null}
-        {captureState === 'review' ? renderReviewState() : null}
-      </BottomSheetScrollView>
-    </BottomSheet>
+    <Modal transparent={true} animationType="slide" visible onRequestClose={dismissSheet}>
+      <View style={styles.modalRoot}>
+        <Pressable onPress={dismissSheet} style={styles.backdrop} />
+        <Animated.View style={[styles.sheetBackground, styles.sheetContainer, {height: sheetHeight}]}>
+          <View style={styles.handleIndicator} />
+          <ScrollView contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
+            {captureState === 'idle' ? renderIdleState() : null}
+            {captureState === 'uploading' || captureState === 'analysing' ? renderAnalysingState() : null}
+            {captureState === 'review' ? renderReviewState() : null}
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -414,9 +414,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: withAlpha(colours.textPrimary, 0.24),
+  },
+  sheetContainer: {
+    width: '100%',
+    overflow: 'hidden',
+  },
   handleIndicator: {
     backgroundColor: withAlpha(colours.textSecondary, 0.24),
     width: 48,
+    height: 5,
+    borderRadius: 999,
+    alignSelf: 'center',
+    marginTop: 10,
   },
   contentContainer: {
     paddingHorizontal: spacing.screenGutter,

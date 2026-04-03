@@ -166,7 +166,7 @@ export default function HomeDashboardScreen() {
             setHint(null);
           }}
           onSubmitEditing={handleCommand}
-          placeholder="Try: inspect 12 High Street tomorrow"
+          placeholder={`Try entering: ${completedCount > 0 ? 'open (address)' : 'create (address)'}`}
           placeholderTextColor={placeholderText}
           returnKeyType="go"
           style={styles.commandInput}

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   generatedBadge: {
     alignSelf: 'flex-start',
     borderRadius: radii.badge,
-    backgroundColor: withAlpha(colours.accent, 0.12),
+    backgroundColor: withAlpha(colours.accent, 0.2),
     paddingHorizontal: 10,
     paddingVertical: 7,
     marginBottom: spacing.tightGap,
@@ -212,6 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.badge,
     alignItems: 'center',
     justifyContent: 'center',
+    display: 'none'
   },
   archiveButtonPressed: {
     backgroundColor: withAlpha(colours.textSecondary, 0.08),
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
   },
   linkButtonText: {
     color: colours.surface,
-    fontFamily: 'Inter_700Bold',
+    fontWeight: 'bold',
   },
   missingReportBlock: {
     gap: 10,
