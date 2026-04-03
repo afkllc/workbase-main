@@ -1,18 +1,19 @@
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
 import {useCallback, useMemo, useState} from 'react';
+import Feather from '@expo/vector-icons/Feather';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {StatusSummaryRow} from '../../../src/components/StatusSummaryRow';
-import {Button, Card, LoadingRow, Notice, Screen, StatusBadge, SuccessBanner} from '../../../src/components/ui';
+import {Button, Card, LoadingRow, Notice, Screen, SuccessBanner} from '../../../src/components/ui';
 import {generateReport, getInspection, updateItem} from '../../../src/lib/api';
 import type {Condition, InspectionRecord, ItemRecord} from '../../../src/lib/types';
 import {formatCondition} from '../../../src/lib/utils';
 import {AppStackScreen} from '../../../src/navigation/AppStackScreen';
-import {colours, layout, radii, spacing, typography} from '../../../src/theme';
+import {colours, layout, spacing, typography} from '../../../src/theme';
 
 const confidenceOrder: Record<string, number> = {low: 0, medium: 1, high: 2};
 
 function itemNeedsAction(item: ItemRecord) {
-  return !item.is_confirmed || item.condition === 'poor';
+  return !item.condition || item.condition === 'poor' || item.condition === 'fair';
 }
 
 function sortItemsForReview(items: ItemRecord[]): ItemRecord[] {
@@ -33,7 +34,7 @@ export default function ReviewScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [filterNeedsReview, setFilterNeedsReview] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'needs_attention'>('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -194,23 +195,29 @@ export default function ReviewScreen() {
                 statusValue={reportReady ? 'ready' : 'review'}
                 title={`${totalConfirmed} of ${totalItems} items confirmed`}
               />
-              {needsReviewCount > 0 ? <Text style={styles.reviewCount}>{needsReviewCount} items need action</Text> : null}
+              {needsReviewCount > 0 ? <Text style={styles.reviewCount}>{needsReviewCount} items need attention</Text> : null}
               {!hasNoChecklistItems ? (
                 <View style={styles.actionRow}>
                   <Pressable
                     hitSlop={4}
-                    onPress={() => setFilterNeedsReview(!filterNeedsReview)}
-                    style={[styles.filterChip, filterNeedsReview ? styles.filterChipActive : null]}
+                    onPress={() => setActiveFilter('all')}
+                    style={[styles.filterChip, activeFilter === 'all' ? styles.filterChipActive : null]}
                   >
-                    <Text style={[styles.filterChipText, filterNeedsReview ? styles.filterChipTextActive : null]}>
-                      {filterNeedsReview ? 'Action needed' : 'All items'}
-                    </Text>
+                    <Text style={[styles.filterChipText, activeFilter === 'all' ? styles.filterChipTextActive : null]}>All items</Text>
+                  </Pressable>
+                  <Pressable
+                    hitSlop={4}
+                    onPress={() => setActiveFilter('needs_attention')}
+                    style={[styles.filterChip, activeFilter === 'needs_attention' ? styles.filterChipAttentionActive : null]}
+                  >
+                    <Text style={[styles.filterChipText, activeFilter === 'needs_attention' ? styles.filterChipAttentionTextActive : null]}>Needs attention</Text>
                   </Pressable>
                   {allConfirmableItems.length > 1 ? (
                     <Button label={`Confirm all (${allConfirmableItems.length})`} onPress={() => void bulkConfirm(allConfirmableItems)} disabled={saving} />
                   ) : null}
                 </View>
               ) : null}
+              {activeFilter === 'needs_attention' ? <Text style={styles.filterHint}>Items marked Poor, Fair, or not yet assessed.</Text> : null}
               {!inspection.sections_completed ? (
                 <Button label="Continue fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} disabled={saving} />
               ) : null}
@@ -222,19 +229,22 @@ export default function ReviewScreen() {
                 <Text style={styles.emptyTitle}>This template has no checklist items.</Text>
                 <Text style={styles.emptyCopy}>Generate the report from this screen to quickly test export and report rendering.</Text>
               </Card>
-            ) : filterNeedsReview && visibleRoomCount === 0 ? (
+            ) : activeFilter === 'needs_attention' && visibleRoomCount === 0 ? (
               <Card>
-                <Text style={styles.emptyTitle}>No action-needed items remain.</Text>
+                <View style={styles.emptyStateHeader}>
+                  <Feather color={colours.success} name="check-circle" size={20} />
+                  <Text style={styles.emptyTitle}>All items are in good condition.</Text>
+                </View>
                 <Text style={styles.emptyCopy}>{inspection.sections_completed ? "You can generate the report whenever you're ready." : 'Save the fixed sections to finish the inspection.'}</Text>
               </Card>
             ) : null}
 
             {inspection.rooms.map((room) => {
               const sortedItems = sortItemsForReview(room.items);
-              const visibleItems = filterNeedsReview ? sortedItems.filter((item) => itemNeedsAction(item)) : sortedItems;
+              const visibleItems = activeFilter === 'needs_attention' ? sortedItems.filter((item) => itemNeedsAction(item)) : sortedItems;
               const roomConfirmable = room.items.filter((item) => !item.is_confirmed && item.condition && item.description);
 
-              if (filterNeedsReview && visibleItems.length === 0) return null;
+              if (activeFilter === 'needs_attention' && visibleItems.length === 0) return null;
 
               return (
                 <Card key={room.id}>
@@ -258,6 +268,7 @@ export default function ReviewScreen() {
                         <Text style={styles.itemDescription}>{item.description || 'No AI description yet.'}</Text>
                         <View style={styles.itemMetaRow}>
                           <Text style={styles.itemMeta}>{formatCondition(item.condition)}</Text>
+                          {item.condition === 'poor' ? <View style={styles.poorMarkerDot} /> : null}
                           {item.ai_confidence ? (
                             <Text style={[styles.confidenceLabel, item.ai_confidence === 'high' ? styles.confidenceHigh : item.ai_confidence === 'medium' ? styles.confidenceMedium : styles.confidenceLow]}>
                               {item.ai_confidence} confidence
@@ -278,9 +289,7 @@ export default function ReviewScreen() {
                           onPress={() => router.push(`/inspection/${inspection.id}/room/${room.id}`)}
                           disabled={saving}
                         />
-                      ) : (
-                        <StatusBadge value={item.is_confirmed ? item.condition ?? 'confirmed' : 'pending'} />
-                      )}
+                      ) : null}
                     </View>
                   ))}
                 </Card>
@@ -307,27 +316,33 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   filterChip: {
-    minHeight: layout.minTouchTarget,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.compactGap,
-    paddingVertical: spacing.tightGap,
-    backgroundColor: colours.background,
-    borderWidth: 1,
-    borderColor: colours.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: layout.minTouchTarget - 8,
+    paddingHorizontal: spacing.tightGap,
+    paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    justifyContent: 'flex-end',
   },
   filterChipActive: {
-    backgroundColor: colours.background,
-    borderColor: colours.accent,
+    borderBottomColor: colours.accent,
+  },
+  filterChipAttentionActive: {
+    borderBottomColor: colours.destructive,
   },
   filterChipText: {
-    ...typography.label,
-    fontFamily: 'Inter_700Bold',
+    ...typography.supporting,
+    fontFamily: 'Inter_600SemiBold',
     color: colours.textSecondary,
   },
   filterChipTextActive: {
     color: colours.accent,
+  },
+  filterChipAttentionTextActive: {
+    color: colours.destructive,
+  },
+  filterHint: {
+    ...typography.supporting,
+    color: colours.textSecondary,
   },
   itemRow: {
     borderTopColor: colours.border,
@@ -357,6 +372,12 @@ const styles = StyleSheet.create({
     ...typography.label,
     fontFamily: 'Inter_600SemiBold',
   },
+  poorMarkerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colours.destructive,
+  },
   confidenceLabel: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
@@ -373,6 +394,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     ...typography.cardTitle,
     color: colours.textPrimary,
+  },
+  emptyStateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.tightGap,
   },
   emptyCopy: {
     ...typography.body,

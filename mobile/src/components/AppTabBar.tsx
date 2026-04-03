@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {borders, colours, layout, radii, shadows, spacing, surfaces, typography} from '../theme';
+import {colours, layout, radii, shadows, spacing, typography} from '../theme';
 
 type FeatherName = ComponentProps<typeof Feather>['name'];
 
@@ -92,14 +92,12 @@ const styles = StyleSheet.create({
   tabIconShell: {
     minWidth: layout.minTouchTarget - spacing.compactGap,
     height: layout.minTouchTarget - spacing.compactGap,
-    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabIconShellActive: {
-    borderWidth: 1,
-    borderColor: borders.primary,
-    backgroundColor: surfaces.primarySoft,
+    borderBottomWidth: 2,
+    borderBottomColor: colours.primary,
   },
   tabLabel: {
     ...typography.label,

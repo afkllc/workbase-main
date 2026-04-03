@@ -136,7 +136,8 @@ export function StatusBadge({value}: {value: string}) {
   const tone = statusTone(value);
 
   return (
-    <View style={[styles.badge, {backgroundColor: tone.backgroundColor, borderColor: tone.borderColor}]}>
+    <View style={styles.badge}>
+      <View style={[styles.badgeMarker, {backgroundColor: tone.color}]} />
       <Text style={[styles.badgeText, {color: tone.color}]}>{formatDisplayName(value)}</Text>
     </View>
   );
@@ -304,14 +305,19 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: radii.badge,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 2,
+  },
+  badgeMarker: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
   },
   badgeText: {
-    ...typography.label,
-    letterSpacing: 0.6,
+    ...typography.supporting,
+    fontFamily: 'Inter_600SemiBold',
   },
   notice: {
     borderRadius: radii.input,

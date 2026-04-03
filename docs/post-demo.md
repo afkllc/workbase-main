@@ -232,3 +232,12 @@ the current Animated/Modal bottom sheet implementation.
 - Object storage
 - Native video upload
 - Offline sync
+
+---
+
+### [mobile + backend] Inspector-facing AI confidence guidance
+
+**Detail:** Keep AI confidence visible in review, but make it actionable:
+show a compact confidence explainer ("High = usually accurate, Medium/Low = review carefully"),
+and optionally route low-confidence items into a lightweight "review first" queue.
+Back this with a stable backend confidence contract so mobile can avoid ambiguous wording.

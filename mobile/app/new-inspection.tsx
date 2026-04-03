@@ -230,8 +230,9 @@ export default function NewInspectionScreen() {
                       <Text style={styles.sectionTitle}>{selectedTemplate.name}</Text>
                       <Text style={styles.templateMeta}>{formatDisplayName(selectedTemplate.property_type)} - {selectedTemplate.source === 'custom' ? 'Custom template' : 'Built-in template'}</Text>
                     </View>
-                    <View style={styles.templateBadge}>
-                      <Text style={styles.templateBadgeText}>{selectedTemplate.source === 'custom' ? 'Custom' : 'Built-in'}</Text>
+                    <View style={styles.templateInline}>
+                      <View style={[styles.templateMarker, selectedTemplate.source === 'custom' ? styles.templateMarkerCustom : styles.templateMarkerBuiltin]} />
+                      <Text style={styles.templateInlineText}>{selectedTemplate.source === 'custom' ? 'Custom' : 'Built-in'}</Text>
                     </View>
                   </View>
                 </View>
@@ -360,15 +361,25 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colours.textSecondary,
   },
-  templateBadge: {
-    borderRadius: radii.badge,
-    backgroundColor: surfaces.primarySoft,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+  templateInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  templateBadgeText: {
-    ...typography.label,
+  templateMarker: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+  templateMarkerCustom: {
+    backgroundColor: colours.accent,
+  },
+  templateMarkerBuiltin: {
+    backgroundColor: colours.primary,
+  },
+  templateInlineText: {
+    ...typography.supporting,
     color: colours.primary,
-    letterSpacing: 0.6,
+    fontFamily: 'Inter_600SemiBold',
   },
 });

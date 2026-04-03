@@ -135,8 +135,9 @@ export default function ReportsScreen() {
           <View key={report.id} style={isHighlighted ? styles.highlightShell : null}>
             <Card>
               {isHighlighted ? (
-                <View style={styles.generatedBadge}>
-                  <Text style={styles.generatedBadgeText}>Just generated</Text>
+                <View style={styles.generatedInline}>
+                  <View style={styles.generatedMarker} />
+                  <Text style={styles.generatedInlineText}>Just generated</Text>
                 </View>
               ) : null}
               <View style={styles.headerRow}>
@@ -175,18 +176,23 @@ const styles = StyleSheet.create({
     backgroundColor: withAlpha(colours.accent, 0.08),
     padding: 2,
   },
-  generatedBadge: {
+  generatedInline: {
     alignSelf: 'flex-start',
-    borderRadius: radii.badge,
-    backgroundColor: withAlpha(colours.accent, 0.2),
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: spacing.tightGap,
   },
-  generatedBadgeText: {
-    ...typography.label,
+  generatedMarker: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: colours.accent,
+  },
+  generatedInlineText: {
+    ...typography.supporting,
     color: colours.accent,
-    letterSpacing: 0.6,
+    fontFamily: 'Inter_600SemiBold',
   },
   headerRow: {
     flexDirection: 'row',
