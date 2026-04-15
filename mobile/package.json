@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "1.4.6",
+  "version": "1.4.8",
   "main": "expo-router/entry",
   "scripts": {
     "start": "node scripts/set-local-ip.js && expo start",
