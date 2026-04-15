@@ -12,7 +12,22 @@ import type {
 
 import {Platform} from 'react-native';
 
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+function resolveApiBaseUrl(): string {
+  const explicit = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  if (explicit) {
+    return explicit.replace(/\/$/, '');
+  }
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    throw new Error(
+      'EXPO_PUBLIC_API_BASE_URL is missing for web build. Set it in Netlify environment variables to your Railway backend URL.',
+    );
+  }
+
+  return 'http://localhost:8000';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const {body, headers: extraHeaders, ...rest} = init ?? {};
