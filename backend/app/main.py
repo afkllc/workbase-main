@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
     init_db(DATABASE_PATH)
     netlify_origins = [
         "https://*.netlify.app",
-        "https://REPLACE_WITH_NETLIFY_URL",
+        "https://workbase11.netlify.app",
     ]
     allow_origins = list(dict.fromkeys([*CORS_ALLOW_ORIGINS, *netlify_origins]))
     app.add_middleware(
