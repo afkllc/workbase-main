@@ -218,7 +218,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.badge,
     alignItems: 'center',
     justifyContent: 'center',
-    display: 'none'
+    borderWidth: 1,
+    borderColor: borders.subtle,
+    backgroundColor: colours.surface,
   },
   archiveButtonPressed: {
     backgroundColor: withAlpha(colours.textSecondary, 0.08),

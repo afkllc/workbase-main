@@ -13,7 +13,7 @@ import {colours, layout, spacing, typography} from '../../../src/theme';
 const confidenceOrder: Record<string, number> = {low: 0, medium: 1, high: 2};
 
 function itemNeedsAction(item: ItemRecord) {
-  return !item.condition || item.condition === 'poor' || item.condition === 'fair';
+  return !item.is_confirmed && (!item.condition || item.condition === 'poor' || item.condition === 'fair');
 }
 
 function sortItemsForReview(items: ItemRecord[]): ItemRecord[] {
@@ -217,7 +217,7 @@ export default function ReviewScreen() {
                   ) : null}
                 </View>
               ) : null}
-              {activeFilter === 'needs_attention' ? <Text style={styles.filterHint}>Items marked Poor, Fair, or not yet assessed.</Text> : null}
+              {activeFilter === 'needs_attention' ? <Text style={styles.filterHint}>Unconfirmed poor, fair, or not yet assessed items.</Text> : null}
               {!inspection.sections_completed ? (
                 <Button label="Continue fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} disabled={saving} />
               ) : null}
@@ -233,9 +233,9 @@ export default function ReviewScreen() {
               <Card>
                 <View style={styles.emptyStateHeader}>
                   <Feather color={colours.success} name="check-circle" size={20} />
-                  <Text style={styles.emptyTitle}>All items are in good condition.</Text>
+                  <Text style={styles.emptyTitle}>Review complete</Text>
                 </View>
-                <Text style={styles.emptyCopy}>{inspection.sections_completed ? "You can generate the report whenever you're ready." : 'Save the fixed sections to finish the inspection.'}</Text>
+                <Text style={styles.emptyCopy}>All items reviewed. Nothing needs your attention.</Text>
               </Card>
             ) : null}
 

@@ -17,7 +17,6 @@ export default function SectionsScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [shouldNavigateToReviewAfterSuccess, setShouldNavigateToReviewAfterSuccess] = useState(false);
   const [initialSectionsSnapshot, setInitialSectionsSnapshot] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -74,10 +73,8 @@ export default function SectionsScreen() {
       setInitialSectionsSnapshot(JSON.stringify(updated.sections));
       scrollViewRef.current?.scrollTo({y: 0, animated: true});
       setSuccessMessage('Sections saved');
-      setShouldNavigateToReviewAfterSuccess(allRoomsComplete);
     } catch (err) {
       setSuccessMessage(null);
-      setShouldNavigateToReviewAfterSuccess(false);
       setError(err instanceof Error ? err.message : 'Failed to save sections.');
     } finally {
       setSaving(false);
@@ -86,9 +83,8 @@ export default function SectionsScreen() {
 
   function handleSuccessBannerDismiss() {
     setSuccessMessage(null);
-    if (shouldNavigateToReviewAfterSuccess && inspection) {
-      setShouldNavigateToReviewAfterSuccess(false);
-      router.push(`/inspection/${inspection.id}/review`);
+    if (inspection) {
+      router.replace(`/inspection/${inspection.id}`);
       return;
     }
 
@@ -127,61 +123,67 @@ export default function SectionsScreen() {
                 </Card>
               ) : null}
 
-              <Card>
-                <Text style={styles.sectionTitle}>Meter readings</Text>
-                <Text style={styles.sectionBody}>Capture the latest gas, electric, and water readings for the inspection.</Text>
-                <Label>Gas</Label>
-                <TextField value={inspection.sections.meter_readings.gas} onChangeText={(gas) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, gas}}})} />
-                <Label>Electric</Label>
-                <TextField value={inspection.sections.meter_readings.electric} onChangeText={(electric) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, electric}}})} />
-                <Label>Water</Label>
-                <TextField value={inspection.sections.meter_readings.water} onChangeText={(water) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, water}}})} />
-              </Card>
+              <View style={styles.sectionGroup}>
+                <Card>
+                  <Text style={styles.sectionTitle}>Meter readings</Text>
+                  <Text style={styles.sectionBody}>Capture the latest gas, electric, and water readings for the inspection.</Text>
+                  <Label>Gas</Label>
+                  <TextField value={inspection.sections.meter_readings.gas} onChangeText={(gas) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, gas}}})} />
+                  <Label>Electric</Label>
+                  <TextField value={inspection.sections.meter_readings.electric} onChangeText={(electric) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, electric}}})} />
+                  <Label>Water</Label>
+                  <TextField value={inspection.sections.meter_readings.water} onChangeText={(water) => setInspection({...inspection, sections: {...inspection.sections, meter_readings: {...inspection.sections.meter_readings, water}}})} />
+                </Card>
+              </View>
 
-              <Card>
-                <Text style={styles.sectionTitle}>Keys and fobs</Text>
-                <Text style={styles.sectionBody}>Record the quantities handed over for entry and access items.</Text>
-                {Object.entries(inspection.sections.keys_and_fobs).map(([label, quantity]) => (
-                  <View key={label} style={styles.keyRow}>
-                    <Text ellipsizeMode="tail" numberOfLines={1} style={styles.keyLabel}>{formatDisplayName(label)}</Text>
-                    <TextInput
-                      keyboardType="numeric"
-                      onChangeText={(value) =>
-                        setInspection({
-                          ...inspection,
-                          sections: {
-                            ...inspection.sections,
-                            keys_and_fobs: {
-                              ...inspection.sections.keys_and_fobs,
-                              [label]: Number(value || 0),
+              <View style={styles.sectionGroup}>
+                <Card>
+                  <Text style={styles.sectionTitle}>Keys and fobs</Text>
+                  <Text style={styles.sectionBody}>Record the quantities handed over for entry and access items.</Text>
+                  {Object.entries(inspection.sections.keys_and_fobs).map(([label, quantity]) => (
+                    <View key={label} style={styles.keyRow}>
+                      <Text ellipsizeMode="tail" numberOfLines={1} style={styles.keyLabel}>{formatDisplayName(label)}</Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        onChangeText={(value) =>
+                          setInspection({
+                            ...inspection,
+                            sections: {
+                              ...inspection.sections,
+                              keys_and_fobs: {
+                                ...inspection.sections.keys_and_fobs,
+                                [label]: Number(value || 0),
+                              },
                             },
-                          },
-                        })
-                      }
-                      style={styles.qtyInput}
-                      value={String(quantity)}
-                    />
-                  </View>
-                ))}
-              </Card>
+                          })
+                        }
+                        style={styles.qtyInput}
+                        value={String(quantity)}
+                      />
+                    </View>
+                  ))}
+                </Card>
+              </View>
 
-              <Card>
-                <Text style={styles.sectionTitle}>General observations</Text>
-                <Text style={styles.sectionBody}>Capture the overall condition and any additional property notes.</Text>
-                <ToggleRow label="Smoke alarms present" onValueChange={(smoke_alarms) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, smoke_alarms}}})} value={inspection.sections.general_observations.smoke_alarms} />
-                <ToggleRow label="CO detector present" onValueChange={(co_detector) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, co_detector}}})} value={inspection.sections.general_observations.co_detector} />
-                <Label>Overall cleanliness</Label>
-                <View style={styles.pickerShell}>
-                  <Picker selectedValue={inspection.sections.general_observations.overall_cleanliness} onValueChange={(overall_cleanliness) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, overall_cleanliness}}})}>
-                    <Picker.Item label="Professional clean" value="professional_clean" />
-                    <Picker.Item label="Good" value="good" />
-                    <Picker.Item label="Fair" value="fair" />
-                    <Picker.Item label="Poor" value="poor" />
-                  </Picker>
-                </View>
-                <Label>Additional notes</Label>
-                <TextField multiline value={inspection.sections.general_observations.additional_notes} onChangeText={(additional_notes) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, additional_notes}}})} />
-              </Card>
+              <View style={styles.sectionGroup}>
+                <Card>
+                  <Text style={styles.sectionTitle}>General observations</Text>
+                  <Text style={styles.sectionBody}>Capture the overall condition and any additional property notes.</Text>
+                  <ToggleRow label="Smoke alarms present" onValueChange={(smoke_alarms) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, smoke_alarms}}})} value={inspection.sections.general_observations.smoke_alarms} />
+                  <ToggleRow label="CO detector present" onValueChange={(co_detector) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, co_detector}}})} value={inspection.sections.general_observations.co_detector} />
+                  <Label>Overall cleanliness</Label>
+                  <View style={styles.pickerShell}>
+                    <Picker selectedValue={inspection.sections.general_observations.overall_cleanliness} onValueChange={(overall_cleanliness) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, overall_cleanliness}}})}>
+                      <Picker.Item label="Professional clean" value="professional_clean" />
+                      <Picker.Item label="Good" value="good" />
+                      <Picker.Item label="Fair" value="fair" />
+                      <Picker.Item label="Poor" value="poor" />
+                    </Picker>
+                  </View>
+                  <Label>Additional notes</Label>
+                  <TextField multiline value={inspection.sections.general_observations.additional_notes} onChangeText={(additional_notes) => setInspection({...inspection, sections: {...inspection.sections, general_observations: {...inspection.sections.general_observations, additional_notes}}})} />
+                </Card>
+              </View>
 
               <Pressable disabled={saving} onPress={() => void save()} style={({pressed}) => [styles.saveButton, saving ? styles.saveButtonDisabled : null, pressed && !saving ? styles.saveButtonPressed : null]}>
                 {saving ? (
@@ -190,7 +192,7 @@ export default function SectionsScreen() {
                     <Text style={styles.saveButtonText}>Saving...</Text>
                   </View>
                 ) : (
-                  <Text style={styles.saveButtonText}>{allRoomsComplete ? 'Save and continue to review' : 'Save sections'}</Text>
+                  <Text style={styles.saveButtonText}>Save and return</Text>
                 )}
               </Pressable>
             </>
@@ -215,6 +217,9 @@ const styles = StyleSheet.create({
   sectionBody: {
     ...typography.body,
     color: colours.textSecondary,
+  },
+  sectionGroup: {
+    marginTop: spacing.compactGap,
   },
   keyRow: {
     flexDirection: 'row',

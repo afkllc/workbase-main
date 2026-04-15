@@ -1,15 +1,17 @@
-import {Download, FileText, LoaderCircle} from 'lucide-react';
+import {Archive, Download, FileText, LoaderCircle} from 'lucide-react';
 import {EmptyState, Header, LoadingCards, PageBody, SectionCard, statusPill} from '../components/layout';
 import type {InspectionSummary} from '../types';
 
 export function ReportsScreen({
   baseUrl,
   loading,
+  onArchive,
   reports,
   onBack,
 }: {
   baseUrl: string;
   loading: boolean;
+  onArchive: (report: InspectionSummary) => void;
   reports: InspectionSummary[];
   onBack: () => void;
 }) {
@@ -48,9 +50,23 @@ export function ReportsScreen({
                     <h3 className="text-lg font-semibold text-slate-950">{report.property_address}</h3>
                     <p className="mt-1 text-sm text-slate-500">{report.property_type} - {report.inspection_date}</p>
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill(report.status)}`}>
-                    {report.status}
-                  </span>
+                  <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      aria-label={`Archive report for ${report.property_address}`}
+                      onClick={() => {
+                        if (window.confirm('Archive this report? It will be removed from your reports list but not deleted.')) {
+                          onArchive(report);
+                        }
+                      }}
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                    >
+                      <Archive size={18} />
+                    </button>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill(report.status)}`}>
+                      {report.status}
+                    </span>
+                  </div>
                 </div>
 
                 {report.report_url ? (

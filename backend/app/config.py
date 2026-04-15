@@ -42,6 +42,7 @@ CORS_ALLOW_ORIGIN_REGEX = _read_backend_env_value(
     r"^https?://("
     r"localhost|"
     r"127\.0\.0\.1|"
+    r"[a-z0-9-]+\.netlify\.app|"
     r"192\.168\.\d{1,3}\.\d{1,3}|"
     r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
     r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"

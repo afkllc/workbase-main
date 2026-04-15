@@ -23,6 +23,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(text || `Request failed: ${response.status}`);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }
 
@@ -92,5 +96,11 @@ export function runVideoScan(inspectionId: string, roomId: string) {
 export function generateReport(inspectionId: string) {
   return request<InspectionRecord>(`/api/inspections/${inspectionId}/generate`, {
     method: 'POST',
+  });
+}
+
+export function archiveReport(inspectionId: string) {
+  return request<void>(`/api/reports/${inspectionId}/archive`, {
+    method: 'PATCH',
   });
 }

@@ -18,6 +18,7 @@ export default function InspectionScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreatedBanner, setShowCreatedBanner] = useState(false);
+  const [showSecondaryActions, setShowSecondaryActions] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,6 +64,11 @@ export default function InspectionScreen() {
   const remaining = Math.max(0, total - confirmed);
   const completion = total > 0 ? (confirmed / total) * 100 : 0;
   const nextIncompleteRoom = inspection?.rooms.find((room) => room.items_confirmed < room.items_total) ?? null;
+  const captureActive = Boolean(nextIncompleteRoom);
+
+  useEffect(() => {
+    setShowSecondaryActions(!captureActive);
+  }, [captureActive, inspectionId]);
 
   let primaryActionLabel = 'Open review';
   let primaryAction: (() => void) | null = inspection ? () => router.push(`/inspection/${inspection.id}/review`) : null;
@@ -132,10 +138,24 @@ export default function InspectionScreen() {
               <Text style={styles.guidanceCopy}>{progressHelperCopy}</Text>
 
               {primaryAction ? <Button label={primaryActionLabel} onPress={primaryAction} /> : null}
-              <View style={styles.actionRow}>
-                <Button label="Fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} />
-                <Button label="Review inspection" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
-              </View>
+              {captureActive ? (
+                <Pressable
+                  onPress={() => setShowSecondaryActions((current) => !current)}
+                  style={({pressed}) => [styles.secondaryToggle, pressed ? styles.secondaryTogglePressed : null]}
+                >
+                  <View style={styles.secondaryToggleCopy}>
+                    <Text style={styles.secondaryToggleTitle}>{showSecondaryActions ? 'Hide options' : 'More options'}</Text>
+                    <Text style={styles.secondaryToggleHint}>Review and fixed sections stay tucked away until you need them.</Text>
+                  </View>
+                  <Feather color={colours.textSecondary} name={showSecondaryActions ? 'chevron-up' : 'chevron-down'} size={18} />
+                </Pressable>
+              ) : null}
+              {showSecondaryActions ? (
+                <View style={styles.actionRow}>
+                  <Button label="Fixed sections" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/sections`)} />
+                  <Button label="Review inspection" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} />
+                </View>
+              ) : null}
             </Card>
 
             {inspection.rooms.length === 0 ? (
@@ -257,6 +277,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.tightGap,
     flexWrap: 'wrap',
+  },
+  secondaryToggle: {
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: borders.subtle,
+    backgroundColor: surfaces.muted,
+    paddingHorizontal: spacing.compactGap,
+    paddingVertical: spacing.compactGap,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.compactGap,
+  },
+  secondaryTogglePressed: {
+    backgroundColor: withAlpha(colours.primary, 0.08),
+  },
+  secondaryToggleCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  secondaryToggleTitle: {
+    ...typography.cardTitle,
+    color: colours.textPrimary,
+  },
+  secondaryToggleHint: {
+    ...typography.supporting,
+    color: colours.textSecondary,
   },
   roomCard: {
     borderRadius: radii.card,

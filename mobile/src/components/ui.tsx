@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import type {ReactNode} from 'react';
+import type {MutableRefObject, ReactNode} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -27,6 +27,7 @@ export function Screen({
   includeTopInset = true,
   contentContainerStyle,
   onScrollBeginDrag,
+  scrollRef,
 }: {
   title?: string;
   subtitle?: string;
@@ -37,12 +38,18 @@ export function Screen({
   includeTopInset?: boolean;
   contentContainerStyle?: object;
   onScrollBeginDrag?: () => void;
+  scrollRef?: MutableRefObject<KeyboardAwareScrollView | null>;
 }) {
   const content = scroll ? (
     <KeyboardAwareScrollView
       contentContainerStyle={[styles.content, !showHeader ? styles.headerlessContent : null, contentContainerStyle]}
       enableOnAndroid
       extraScrollHeight={24}
+      innerRef={(ref) => {
+        if (scrollRef) {
+          scrollRef.current = ref as unknown as KeyboardAwareScrollView | null;
+        }
+      }}
       keyboardShouldPersistTaps="handled"
       onScrollBeginDrag={onScrollBeginDrag}
       showsVerticalScrollIndicator={false}

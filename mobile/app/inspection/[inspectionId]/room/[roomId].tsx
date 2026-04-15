@@ -1,6 +1,7 @@
 import {useFocusEffect, useLocalSearchParams, useRouter} from 'expo-router';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import type {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {EmptyState} from '../../../../src/components/EmptyState';
 import {ItemCaptureSheet, type ItemCaptureConfirmPayload, type ItemCaptureSheetMode} from '../../../../src/components/ItemCaptureSheet';
@@ -138,6 +139,9 @@ export default function RoomScreen() {
   const {inspectionId, roomId} = useLocalSearchParams<{inspectionId: string; roomId: string}>();
   const captureSessionRef = useRef(0);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const screenScrollRef = useRef<KeyboardAwareScrollView | null>(null);
+  const itemLayoutYRef = useRef<Record<string, number>>({});
+  const itemsSectionOffsetRef = useRef(0);
   const [inspection, setInspection] = useState<InspectionRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,6 +196,7 @@ export default function RoomScreen() {
   const armedItem = items.find((item) => !item.is_confirmed) ?? null;
   const roomComplete = Boolean(room && room.items_confirmed === room.items_total);
   const nextIncompleteRoom = inspection && room ? getNextIncompleteRoom(inspection, room.id) : null;
+  const showReviewExceptions = roomComplete && flaggedCount > 0;
 
   useEffect(() => {
     return () => {
@@ -200,6 +205,11 @@ export default function RoomScreen() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    itemLayoutYRef.current = {};
+    itemsSectionOffsetRef.current = 0;
+  }, [roomId]);
 
   function clearAutoSaveBanner() {
     if (autoSaveTimerRef.current) {
@@ -218,6 +228,24 @@ export default function RoomScreen() {
       setLastAutoSaved(null);
       autoSaveTimerRef.current = null;
     }, 4000);
+  }
+
+  function focusNextItem(nextItemId?: string) {
+    if (!nextItemId) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const itemOffset = itemLayoutYRef.current[nextItemId];
+        if (typeof itemOffset !== 'number') {
+          return;
+        }
+
+        const absoluteOffset = itemsSectionOffsetRef.current + itemOffset;
+        screenScrollRef.current?.scrollToPosition(0, Math.max(0, absoluteOffset - spacing.sectionGap), true);
+      });
+    });
   }
 
   function openCaptureSheet(
@@ -341,6 +369,7 @@ export default function RoomScreen() {
             nextItemId: nextItem?.id,
             nextItemName: nextItem?.name,
           });
+          focusNextItem(nextItem?.id);
         } catch (saveError) {
           setError(saveError instanceof Error ? saveError.message : 'Failed to save this item.');
           try {
@@ -491,7 +520,7 @@ export default function RoomScreen() {
         title={room ? `${room.name} - Capture` : 'Room Capture'}
       />
       <View style={styles.root}>
-        <Screen includeTopInset={false} showHeader={false}>
+        <Screen includeTopInset={false} scrollRef={screenScrollRef} showHeader={false}>
           {successMessage ? <SuccessBanner message={successMessage} onDismiss={() => setSuccessMessage(null)} /> : null}
           {error ? <Notice>{error}</Notice> : null}
           {loading ? <LoadingRow label="Loading room" /> : null}
@@ -546,12 +575,12 @@ export default function RoomScreen() {
                 </Card>
               ) : null}
 
-              {!roomComplete && lastAutoSaved ? (
+              {lastAutoSaved ? (
                 <Card>
                   <View style={styles.autoSaveHeader}>
                     <Text style={styles.autoSaveTitle}>{lastAutoSaved.itemName} saved as {formatCondition(lastAutoSaved.condition)}</Text>
                     <Text style={styles.autoSaveCopy}>
-                      {lastAutoSaved.nextItemName ? `Next item armed: ${lastAutoSaved.nextItemName}.` : 'Room capture updated.'}
+                      {lastAutoSaved.nextItemName ? `Next item armed: ${lastAutoSaved.nextItemName}.` : roomCompletionLabel ? `Room complete. ${roomCompletionLabel}.` : 'Room capture updated.'}
                     </Text>
                   </View>
                   <View style={styles.actionRow}>
@@ -561,64 +590,75 @@ export default function RoomScreen() {
                 </Card>
               ) : null}
 
-              <Card>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Inspection items</Text>
-                  <Text style={styles.helperText}>Tap the highlighted next item to capture it fast. Tap a saved item to review or adjust it.</Text>
-                </View>
+              <View
+                onLayout={(event) => {
+                  itemsSectionOffsetRef.current = event.nativeEvent.layout.y;
+                }}
+              >
+                <Card>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Inspection items</Text>
+                    <Text style={styles.helperText}>Tap the highlighted next item to capture it fast. Tap a saved item to review or adjust it.</Text>
+                  </View>
 
-                {room.items.length === 0 ? (
-                  <EmptyState icon="inbox" message="No checklist items for this room." />
-                ) : (
-                  room.items.map((item) => {
-                    const isPersisting = persistingItemIds.includes(item.id);
-                    const isDisabled = isInteractionLocked;
-                    const isArmed = armedItem?.id === item.id;
-                    const isFlagged = item.is_confirmed && item.condition === 'poor';
-                    const subtitle = item.is_confirmed
-                      ? isFlagged
-                        ? 'Flagged item. Tap to review or correct it.'
-                        : 'Captured item. Tap to review or adjust it.'
-                      : isArmed
-                        ? 'Next item armed. Tap to capture now.'
-                        : 'Tap to capture this item.';
-                    const titleAdornment = isPersisting ? (
-                      <Text style={styles.savingTag}>Saving</Text>
-                    ) : isArmed ? (
-                      <Text style={styles.nextTag}>Next</Text>
-                    ) : isFlagged ? (
-                      <Text style={styles.flaggedTag}>Flagged</Text>
-                    ) : null;
+                  {room.items.length === 0 ? (
+                    <EmptyState icon="inbox" message="No checklist items for this room." />
+                  ) : (
+                    room.items.map((item) => {
+                      const isPersisting = persistingItemIds.includes(item.id);
+                      const isDisabled = isInteractionLocked;
+                      const isArmed = armedItem?.id === item.id;
+                      const isFlagged = item.is_confirmed && item.condition === 'poor';
+                      const subtitle = item.is_confirmed
+                        ? isFlagged
+                          ? 'Flagged item. Tap to review or correct it.'
+                          : 'Captured item. Tap to review or adjust it.'
+                        : isArmed
+                          ? 'Next item armed. Tap to capture now.'
+                          : 'Tap to capture this item.';
+                      const titleAdornment = isPersisting ? (
+                        <Text style={styles.savingTag}>Saving</Text>
+                      ) : isArmed ? (
+                        <Text style={styles.nextTag}>Next</Text>
+                      ) : isFlagged ? (
+                        <Text style={styles.flaggedTag}>Flagged</Text>
+                      ) : null;
 
-                    return (
-                      <Pressable
-                        key={item.id}
-                        disabled={isDisabled}
-                        onPress={() => void handleItemPress(item)}
-                        style={({pressed}) => [
-                          styles.itemRow,
-                          isArmed ? styles.itemRowArmed : null,
-                          isFlagged ? styles.itemRowFlagged : null,
-                          pressed && !isDisabled ? styles.itemRowPressed : null,
-                          isDisabled ? styles.itemRowDisabled : null,
-                        ]}
-                      >
-                        <StatusSummaryRow
-                          subtitle={item.description || subtitle}
-                          statusValue={item.is_confirmed ? item.condition ?? 'confirmed' : item.condition ?? 'pending'}
-                          title={item.name}
-                          titleAdornment={titleAdornment}
-                        />
-                      </Pressable>
-                    );
-                  })
-                )}
-              </Card>
+                      return (
+                        <Pressable
+                          key={item.id}
+                          disabled={isDisabled}
+                          onLayout={(event) => {
+                            itemLayoutYRef.current[item.id] = event.nativeEvent.layout.y;
+                          }}
+                          onPress={() => void handleItemPress(item)}
+                          style={({pressed}) => [
+                            styles.itemRow,
+                            isArmed ? styles.itemRowArmed : null,
+                            isFlagged ? styles.itemRowFlagged : null,
+                            pressed && !isDisabled ? styles.itemRowPressed : null,
+                            isDisabled ? styles.itemRowDisabled : null,
+                          ]}
+                        >
+                          <StatusSummaryRow
+                            subtitle={item.description || subtitle}
+                            statusValue={item.is_confirmed ? item.condition ?? 'confirmed' : item.condition ?? 'pending'}
+                            title={item.name}
+                            titleAdornment={titleAdornment}
+                          />
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </Card>
+              </View>
 
               {roomComplete && roomCompletionLabel && roomCompletionAction ? (
                 <Button label={roomCompletionLabel} onPress={roomCompletionAction} disabled={isInteractionLocked} />
               ) : null}
-              <Button label="Review flagged items" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} disabled={isInteractionLocked} />
+              {showReviewExceptions ? (
+                <Button label="Review exceptions" variant="secondary" onPress={() => router.push(`/inspection/${inspection.id}/review`)} disabled={isInteractionLocked} />
+              ) : null}
             </>
           ) : null}
         </Screen>

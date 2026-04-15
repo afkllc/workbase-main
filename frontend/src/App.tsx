@@ -3,6 +3,7 @@ import type {JSX} from 'react';
 import {AppShell, ScreenStage} from './components/layout';
 import {
   analysePhoto,
+  archiveReport,
   createInspection,
   generateReport,
   getApiBaseUrl,
@@ -274,6 +275,31 @@ export default function App() {
     }
   }
 
+  async function handleArchiveReport(report: InspectionSummary) {
+    setError(null);
+
+    const archivedAt = report.archived_at ?? new Date().toISOString();
+    const previousInspections = inspections;
+    const previousInspection = inspection;
+
+    setInspections((current) =>
+      current.map((entry) => (entry.id === report.id ? {...entry, is_archived: true, archived_at: archivedAt} : entry)),
+    );
+
+    if (inspection?.id === report.id) {
+      setInspection({...inspection, is_archived: true, archived_at: archivedAt});
+    }
+
+    try {
+      await archiveReport(report.id);
+      showSuccess('Report archived');
+    } catch (err) {
+      setInspections(previousInspections);
+      setInspection(previousInspection);
+      setError(err instanceof Error ? err.message : 'Failed to archive report.');
+    }
+  }
+
   const completedReports = inspections.filter((entry) => entry.status === 'completed' && !entry.is_archived);
   const stageKey = `${screen}:${inspection?.id ?? 'none'}:${selectedRoomId ?? 'none'}`;
 
@@ -374,7 +400,7 @@ export default function App() {
   }
 
   if (screen === 'reports') {
-    screenContent = <ReportsScreen baseUrl={getApiBaseUrl()} loading={loading} reports={completedReports} onBack={() => setScreen('home')} />;
+    screenContent = <ReportsScreen baseUrl={getApiBaseUrl()} loading={loading} onArchive={(report) => void handleArchiveReport(report)} reports={completedReports} onBack={() => setScreen('home')} />;
   }
 
   return (

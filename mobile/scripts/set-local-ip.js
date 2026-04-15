@@ -52,7 +52,29 @@ function upsertEnvVariable(filePath, key, value) {
   fs.writeFileSync(filePath, `${nextLines.join(newline)}${newline}`, 'utf8');
 }
 
+function readEnvVariable(filePath, key) {
+  if (!fs.existsSync(filePath)) {
+    return '';
+  }
+
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  const targetLine = lines.find((line) => new RegExp(`^\\s*${key}\\s*=`).test(line));
+  if (!targetLine) {
+    return '';
+  }
+
+  return targetLine.slice(targetLine.indexOf('=') + 1).trim();
+}
+
 function main() {
+  const force = process.argv.includes('--force');
+  const existingValue = readEnvVariable(ENV_FILE, ENV_KEY);
+
+  if (existingValue && !force) {
+    console.log(`[set-local-ip] ${ENV_KEY} already set — skipping`);
+    return;
+  }
+
   const ip = detectLocalIp();
   if (!ip) {
     console.error('Error: No active non-internal IPv4 address found. .env.local was not changed.');
@@ -62,8 +84,7 @@ function main() {
   const baseUrl = `http://${ip}:8000`;
   upsertEnvVariable(ENV_FILE, ENV_KEY, baseUrl);
 
-  console.log(`Detected local IP: ${ip}`);
-  console.log(`${ENV_KEY}=${baseUrl}`);
+  console.log(`[set-local-ip] Set ${ENV_KEY} to ${baseUrl}`);
 }
 
 main();
