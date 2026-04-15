@@ -3,7 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  EXPO_PUBLIC_API_BASE_URL = "REPLACE_WITH_RAILWAY_URL"
+  EXPO_PUBLIC_API_BASE_URL = "https://workbase-main.railway.app"
 
 [[redirects]]
   from = "/*"
