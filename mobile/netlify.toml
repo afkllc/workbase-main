@@ -2,9 +2,6 @@
   command = "npx expo export --platform web"
   publish = "dist"
 
-[build.environment]
-  EXPO_PUBLIC_API_BASE_URL = "https://work-base.up.railway.app"
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
