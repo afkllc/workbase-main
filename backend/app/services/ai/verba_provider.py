@@ -69,10 +69,8 @@ class VerbaProvider(AIProvider):
 
         response = self._post_response(
             character=self._capture_character,
-            message_content=[
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": image_url}},
-            ],
+            message_content=prompt,
+            image_urls=[image_url],
             temperature=0.1,
             top_p=0.2,
             max_tokens=220,
@@ -96,14 +94,7 @@ class VerbaProvider(AIProvider):
         )
 
     def generate_report(self, *, inspection: InspectionRecord) -> str:
-        inspection_json = json.dumps(inspection.model_dump(mode="json"), ensure_ascii=True)
-        prompt = (
-            "Write a concise, factual inspection summary for a lettings-style inventory report.\n"
-            "Use only the facts provided in the JSON.\n"
-            "Do not invent issues, causes, blame, costs, or legal conclusions.\n"
-            "Keep the output to 2-3 short paragraphs in plain text.\n\n"
-            f"Inspection JSON:\n{inspection_json}"
-        )
+        prompt = self._build_report_prompt(inspection)
 
         response = self._post_response(
             character=self._report_character,
@@ -117,16 +108,79 @@ class VerbaProvider(AIProvider):
             raise AIProviderResponseError("Verba returned an empty report summary.")
         return summary
 
+    def _build_report_prompt(self, inspection: InspectionRecord) -> str:
+        def clean(text: str) -> str:
+            return " ".join(text.strip().split())
+
+        def clamp(text: str, limit: int) -> str:
+            cleaned = clean(text)
+            if len(cleaned) <= limit:
+                return cleaned
+            # Leave room for an ellipsis.
+            return f"{cleaned[: max(0, limit - 1)].rstrip()}…"
+
+        # Verba enforces a 4000-character max per message content.
+        # Keep a safety buffer for any formatting overhead.
+        max_prompt_chars = 3600
+
+        header = "\n".join(
+            [
+                "Write a concise, factual inspection summary for a lettings-style inventory report.",
+                "Use only the facts provided below.",
+                "Do not invent issues, causes, blame, costs, or legal conclusions.",
+                "Keep the output to 2-3 short paragraphs in plain text.",
+                "",
+                "Inspection facts:",
+                f"- Address: {inspection.property_address}",
+                f"- Postcode: {inspection.postcode}",
+                f"- Inspection date: {inspection.inspection_date}",
+                f"- Property type: {inspection.property_type}",
+                "",
+                "Room findings (only confirmed items):",
+            ]
+        )
+
+        lines: list[str] = [header]
+        remaining = max_prompt_chars - len(header)
+        if remaining <= 0:
+            return clamp(header, max_prompt_chars)
+
+        for room in inspection.rooms:
+            room_title = f"\n{room.name}:"
+            if len(room_title) + 1 > remaining:
+                break
+            lines.append(room_title)
+            remaining -= len(room_title)
+
+            for item in room.items:
+                if not item.is_confirmed:
+                    continue
+                condition = (item.condition or "na").strip()
+                description = clamp(item.description or "", 220)
+                bullet = f"- {item.name}: {condition}. {description}".rstrip()
+                if len(bullet) + 1 > remaining:
+                    remaining = 0
+                    break
+                lines.append(bullet)
+                remaining -= len(bullet)
+
+            if remaining <= 0:
+                break
+
+        prompt = "\n".join(lines).strip()
+        return clamp(prompt, max_prompt_chars)
+
     def _post_response(
         self,
         *,
         character: str,
-        message_content: str | list[dict[str, Any]],
+        message_content: str,
+        image_urls: list[str] | None = None,
         temperature: float,
         top_p: float,
         max_tokens: int,
     ) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "character": character,
             "messages": [
                 {
@@ -137,9 +191,10 @@ class VerbaProvider(AIProvider):
             "temperature": temperature,
             "top_p": top_p,
             "max_tokens": max_tokens,
-            "tool_choice": "none",
             "stream": False,
         }
+        if image_urls:
+            payload["image_urls"] = image_urls
         body = json.dumps(payload).encode("utf-8")
         req = request.Request(
             f"{self._api_base_url}/v1/response",
@@ -147,7 +202,12 @@ class VerbaProvider(AIProvider):
             method="POST",
             headers={
                 "Authorization": f"Bearer {self._api_key}",
+                "x-api-key": self._api_key,
                 "Content-Type": "application/json",
+                "Accept": "application/json",
+                # Some upstream WAF/CDN setups block requests that look like "unknown bots".
+                # A stable User-Agent makes these API calls behave like a normal client.
+                "User-Agent": "workbase-backend/0.1 (+https://localhost)",
             },
         )
 
@@ -158,7 +218,9 @@ class VerbaProvider(AIProvider):
             details = exc.read().decode("utf-8", errors="replace")
             if exc.code in {401, 403}:
                 raise AIProviderConfigurationError(
-                    "Verba rejected the configured credentials. Check VERBA_API_KEY and the verb slugs."
+                    "Verba rejected the configured credentials. "
+                    "Check VERBA_API_KEY and the character slugs. "
+                    f"(HTTP {exc.code}) {details[:240]}".strip()
                 ) from exc
             if exc.code == 429:
                 raise AIProviderUpstreamError("Verba is rate limiting requests right now. Try again shortly.", status_code=503) from exc

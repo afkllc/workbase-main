@@ -64,6 +64,16 @@ function buildRequestUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
+function shouldSkipNgrokWarning(baseUrl: string): boolean {
+  try {
+    const parsed = new URL(baseUrl);
+    const host = parsed.hostname.toLowerCase();
+    return host.endsWith('.ngrok-free.app') || host.endsWith('.ngrok-free.dev') || host.endsWith('.ngrok.io') || host.endsWith('.ngrok.app');
+  } catch {
+    return false;
+  }
+}
+
 function normaliseDetailPayload(payload: unknown): string {
   if (typeof payload === 'string') {
     return payload.trim();
@@ -118,6 +128,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const {body, headers: extraHeaders, ...rest} = init ?? {};
   const isFormData = body instanceof FormData;
   const requestUrl = buildRequestUrl(path);
+  const skipNgrokWarning = shouldSkipNgrokWarning(API_BASE_URL);
 
   let response: Response;
   try {
@@ -126,6 +137,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       body,
       headers: {
         ...(isFormData ? {} : {'Content-Type': 'application/json'}),
+        ...(skipNgrokWarning ? {'ngrok-skip-browser-warning': 'true'} : {}),
         ...(extraHeaders as Record<string, string> | undefined),
       },
     });
