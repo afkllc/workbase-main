@@ -49,7 +49,7 @@ export default function InspectionsScreen() {
   const completedCount = useMemo(() => inspections.filter((inspection) => inspection.status === 'completed').length, [inspections]);
 
   return (
-    <Screen title="Inspections" subtitle={`${inspections.length} inspections in the workspace.`}>
+    <Screen title="Inspections" subtitle={`${inspections.length} inspections`}>
       <Card>
         <Text style={styles.cardTitle}>Inspection queue</Text>
         <Text style={styles.cardBody}>Open an inspection to continue capture, update property details, or move toward final review.</Text>

@@ -1,8 +1,8 @@
 import requests
 from datetime import datetime
 
-API_KEY = "vka_hd8otmbFSnCu55OPX2J3suEVVU09xdo8"
-CHARACTER = "me_tip"
+API_KEY = "w"
+CHARACTER = "captureai_9pa" #captureai_9pa, reportai_xrw
 URL = "https://api.verba.ink/v1/response"
 
 def send_message(user_text, session_id=None):
@@ -40,7 +40,7 @@ def print_nice_response(data):
         time_str = datetime.fromtimestamp(created).strftime("%Y-%m-%d %H:%M:%S")
 
     print("\n" + "=" * 50)
-    print(f"Assistant: {assistant_text}")
+    print(f"{assistant_text}")
     print("-" * 50)
     print(f"Model:     {model}")
     print(f"Character: {character}")
