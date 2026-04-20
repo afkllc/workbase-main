@@ -56,6 +56,12 @@ For local Expo web development, create `mobile/.env.local`:
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
+If you are exposing the backend publicly via ngrok (to test from another device/network), set it to the ngrok HTTPS URL instead:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=https://your-subdomain.ngrok-free.dev
+```
+
 For Expo Go on a physical device, your phone must be able to reach the backend. Keep a second local-only file such as `mobile/.env.device`:
 
 ```env
@@ -68,12 +74,6 @@ Important note about scripts:
 
 - `npm run web` does **not** modify `mobile/.env.local` (ideal for Expo Web + `http://localhost:8000`).
 - `npm start` runs `node scripts/set-local-ip.js` first, which auto-writes `EXPO_PUBLIC_API_BASE_URL=http://<your LAN IP>:8000` into `mobile/.env.local` (ideal for physical device testing).
-
-ngrok alternative:
-
-```env
-EXPO_PUBLIC_API_BASE_URL=https://your-subdomain.ngrok-free.app
-```
 
 Important:
 
@@ -97,9 +97,9 @@ Verba mode:
 ```env
 AI_PROVIDER=verba
 VERBA_API_KEY=vka_your_api_key
-VERBA_CAPTURE_CHARACTER=your_capture_verb_slug
-VERBA_REPORT_CHARACTER=your_report_verb_slug
-PUBLIC_API_BASE_URL=https://your-railway-backend.up.railway.app
+VERBA_CAPTURE_CHARACTER=your_capture_character_slug
+VERBA_REPORT_CHARACTER=your_report_character_slug
+PUBLIC_API_BASE_URL=https://your-public-backend.example.com
 ```
 
 Notes:
@@ -109,6 +109,52 @@ Notes:
 - If you are running the backend locally but still want Verba image analysis, expose your local FastAPI port with a tunnel and set `PUBLIC_API_BASE_URL` to that HTTPS URL (ngrok / cloudflared / similar).
 - Report generation can still use Verba locally as long as `VERBA_API_KEY` and the character slugs are set.
 - The existing `video-scan` route remains a placeholder MVP path and is not yet backed by Verba video analysis.
+
+Verba + ngrok (no Railway) quick setup:
+
+1) Start the backend locally:
+
+```powershell
+cd .\backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+2) Start an ngrok tunnel to the backend:
+
+```powershell
+ngrok http 8000
+```
+
+3) Copy the **Forwarding** HTTPS URL from ngrok (example: `https://abc123.ngrok-free.dev`) and set it as:
+
+```env
+PUBLIC_API_BASE_URL=https://abc123.ngrok-free.dev
+```
+
+4) Set Verba credentials in `backend/.env`:
+
+```env
+AI_PROVIDER=verba
+VERBA_API_BASE_URL=https://api.verba.ink
+VERBA_API_KEY=vka_your_real_key
+VERBA_CAPTURE_CHARACTER=capture_character_slug
+VERBA_REPORT_CHARACTER=report_character_slug
+PUBLIC_API_BASE_URL=https://abc123.ngrok-free.dev
+```
+
+5) If you point Expo Web at the ngrok URL, set:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=https://abc123.ngrok-free.dev
+```
+
+Then restart Expo with cache cleared:
+
+```powershell
+cd .\mobile
+npx expo start -c --web
+```
 
 ## Run locally
 
@@ -146,6 +192,14 @@ Vite may move off port `3000` if that port is already in use. Always use the `Lo
 cd ~/onedrive/Documents/workbase-main/mobile
 npm install
 npm start
+```
+
+Expo Web (recommended for local browser dev):
+
+```powershell
+cd ~/onedrive/Documents/workbase-main/mobile
+npm install
+npm run web
 ```
 
 ## What each client currently supports
