@@ -8,11 +8,14 @@ coverage/
 __pycache__/
 *.pyc
 .env
-!backend/.env
 .env.local
 frontend/.env.local
 mobile/.env.local
 mobile/.git-scaffold-backup/
 backend/data/
 backend/generated_reports/*.html
+backend/generated_uploads/
+backend/.tmp-smoke/
+backend/.tmp-tests/
+tmp-tests/
 !.env.example

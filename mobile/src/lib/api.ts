@@ -29,22 +29,118 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+export class ApiError extends Error {
+  status: number | null;
+  detail: string;
+  baseUrl: string;
+  requestUrl: string;
+  isNetworkError: boolean;
+
+  constructor({
+    message,
+    status,
+    detail,
+    requestUrl,
+    isNetworkError = false,
+  }: {
+    message: string;
+    status: number | null;
+    detail: string;
+    requestUrl: string;
+    isNetworkError?: boolean;
+  }) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.detail = detail;
+    this.baseUrl = API_BASE_URL;
+    this.requestUrl = requestUrl;
+    this.isNetworkError = isNetworkError;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
+function buildRequestUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
+function normaliseDetailPayload(payload: unknown): string {
+  if (typeof payload === 'string') {
+    return payload.trim();
+  }
+  if (Array.isArray(payload)) {
+    return payload.map((entry) => normaliseDetailPayload(entry)).filter(Boolean).join(' ');
+  }
+  if (payload && typeof payload === 'object') {
+    return JSON.stringify(payload);
+  }
+  return '';
+}
+
+function buildErrorMessage(status: number, detail: string): string {
+  if (detail) {
+    return detail;
+  }
+  if (status === 409) {
+    return 'This action is blocked until the inspection is complete.';
+  }
+  if (status === 502) {
+    return 'The AI service returned an invalid response. Try again in a moment.';
+  }
+  if (status === 503) {
+    return 'The AI service is unavailable or not configured. Check the backend setup and try again.';
+  }
+  return `Request failed: ${status}`;
+}
+
+async function buildApiError(response: Response, requestUrl: string): Promise<ApiError> {
+  const rawBody = await response.text();
+  let detail = rawBody.trim();
+
+  if (rawBody) {
+    try {
+      const payload = JSON.parse(rawBody) as {detail?: unknown};
+      detail = normaliseDetailPayload(payload.detail) || detail;
+    } catch {
+      // Leave non-JSON bodies as-is.
+    }
+  }
+
+  return new ApiError({
+    message: buildErrorMessage(response.status, detail),
+    status: response.status,
+    detail,
+    requestUrl,
+  });
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const {body, headers: extraHeaders, ...rest} = init ?? {};
   const isFormData = body instanceof FormData;
+  const requestUrl = buildRequestUrl(path);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    body,
-    headers: {
-      ...(isFormData ? {} : {'Content-Type': 'application/json'}),
-      ...(extraHeaders as Record<string, string> | undefined),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(requestUrl, {
+      ...rest,
+      body,
+      headers: {
+        ...(isFormData ? {} : {'Content-Type': 'application/json'}),
+        ...(extraHeaders as Record<string, string> | undefined),
+      },
+    });
+  } catch (error) {
+    throw new ApiError({
+      message: `Couldn't reach the backend at ${API_BASE_URL}. Check that the API is running and reachable from this device.`,
+      status: null,
+      detail: error instanceof Error ? error.message : '',
+      requestUrl,
+      isNetworkError: true,
+    });
+  }
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed: ${response.status}`);
+    throw await buildApiError(response, requestUrl);
   }
 
   if (response.status === 204) {
@@ -56,6 +152,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
+}
+
+export function checkBackendHealth() {
+  return request<{status: string}>('/health');
 }
 
 export function getReportUrl(path: string): string {

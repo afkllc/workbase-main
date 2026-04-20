@@ -1,5 +1,9 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from pathlib import Path
+from uuid import uuid4
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+
+from app.config import UPLOADS_DIR, get_public_api_base_url, public_api_base_url_is_reachable
 from app.dependencies import get_ai_provider, get_store
 from app.schemas.domain import (
     AnalysisSuggestion,
@@ -14,6 +18,22 @@ from app.services.store import InspectionStore
 
 
 router = APIRouter(prefix="/api/inspections", tags=["inspections"])
+
+
+def _save_uploaded_photo(photo: UploadFile) -> tuple[str, str | None]:
+    original_name = photo.filename or "capture.jpg"
+    suffix = Path(original_name).suffix or ".jpg"
+    stored_name = f"{uuid4().hex}{suffix.lower()}"
+    target = UPLOADS_DIR / stored_name
+
+    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(photo.file.read())
+
+    public_api_base_url = get_public_api_base_url()
+    if not public_api_base_url_is_reachable(public_api_base_url):
+        return original_name, None
+
+    return original_name, f"{public_api_base_url}/api/uploads/{stored_name}"
 
 
 @router.get("", response_model=list[InspectionSummary])
@@ -69,7 +89,21 @@ async def analyse_photo(
     ai_provider: AIProvider = Depends(get_ai_provider),
     store: InspectionStore = Depends(get_store),
 ):
-    return store.analyse_photo(inspection_id, room_id, photo.filename or "capture.jpg", ai_provider=ai_provider, item_id=item_id)
+    try:
+        photo_name, photo_url = _save_uploaded_photo(photo)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to save the uploaded photo.",
+        ) from exc
+    return store.analyse_photo(
+        inspection_id,
+        room_id,
+        photo_name,
+        ai_provider=ai_provider,
+        item_id=item_id,
+        photo_url=photo_url,
+    )
 
 
 @router.post("/{inspection_id}/rooms/{room_id}/video-scan", response_model=InspectionRecord)

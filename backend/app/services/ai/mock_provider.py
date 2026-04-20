@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from app.schemas.domain import InspectionRecord
-from app.services.ai.base import AIProvider
+from app.services.ai.base import AIProvider, ImageAssessment
+
+
+def _pick_mock_condition(file_name: str, ai_hints: list[str]) -> tuple[str, str]:
+    lowered = f"{file_name} {' '.join(ai_hints)}".lower()
+    if any(token in lowered for token in ("broken", "crack", "chip", "damage", "stain", "fray", "missing")):
+        return "poor", "medium"
+    if any(token in lowered for token in ("scuff", "wear", "mark", "scratch", "faded")):
+        return "fair", "high"
+    return "good", "high"
 
 
 class MockProvider(AIProvider):
@@ -19,11 +28,30 @@ class MockProvider(AIProvider):
         item_name: str,
         ai_hints: list[str],
         property_address: str,
-    ) -> str:
+        image_url: str | None = None,
+    ) -> ImageAssessment:
         hint_fragment = ", ".join(ai_hints[:2]) if ai_hints else item_name.lower()
-        return (
-            f"The {item_name} in the {room_name} shows minor scuff marks and light everyday wear near "
-            f"{hint_fragment}. No structural damage is visible, and the finish appears serviceable for check-in reporting."
+        condition, confidence = _pick_mock_condition(file_name, ai_hints)
+        if condition == "poor":
+            description = (
+                f"The {item_name} in the {room_name} shows visible deterioration around {hint_fragment}. "
+                "The finish appears materially worn and should be reviewed."
+            )
+        elif condition == "fair":
+            description = (
+                f"The {item_name} in the {room_name} shows light scuffs and routine wear near {hint_fragment}. "
+                "No obvious structural damage is visible."
+            )
+        else:
+            description = (
+                f"The {item_name} in the {room_name} appears intact and generally serviceable around {hint_fragment}. "
+                "Only minor everyday wear is suggested from the current context."
+            )
+        _ = image_url
+        return ImageAssessment(
+            condition=condition,  # type: ignore[arg-type]
+            confidence=confidence,  # type: ignore[arg-type]
+            description=description,
         )
 
     def generate_report(self, *, inspection: InspectionRecord) -> str:

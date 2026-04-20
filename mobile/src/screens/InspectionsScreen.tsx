@@ -3,8 +3,8 @@ import {useFocusEffect, useRouter} from 'expo-router';
 import {useCallback, useMemo, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {EmptyState} from '../components/EmptyState';
-import {Card, LoadingRow, Notice, Screen, StatusBadge} from '../components/ui';
-import {listInspections} from '../lib/api';
+import {Button, Card, LoadingRow, Screen, StatusBadge} from '../components/ui';
+import {checkBackendHealth, getApiBaseUrl, listInspections} from '../lib/api';
 import type {InspectionSummary} from '../lib/types';
 import {formatDisplayName} from '../lib/utils';
 import {borders, colours, radii, spacing, surfaces, typography, withAlpha} from '../theme';
@@ -14,6 +14,8 @@ export default function InspectionsScreen() {
   const [inspections, setInspections] = useState<InspectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const apiBaseUrl = getApiBaseUrl();
 
   useFocusEffect(
     useCallback(() => {
@@ -23,12 +25,14 @@ export default function InspectionsScreen() {
         setLoading(true);
         setError(null);
         try {
+          await checkBackendHealth();
           const data = await listInspections();
           if (isActive) {
             setInspections(data);
           }
         } catch (err) {
           if (isActive) {
+            setInspections([]);
             setError(err instanceof Error ? err.message : 'Failed to load inspections.');
           }
         } finally {
@@ -42,14 +46,14 @@ export default function InspectionsScreen() {
       return () => {
         isActive = false;
       };
-    }, []),
+    }, [retryNonce]),
   );
 
   const draftCount = useMemo(() => inspections.filter((inspection) => inspection.status === 'draft').length, [inspections]);
   const completedCount = useMemo(() => inspections.filter((inspection) => inspection.status === 'completed').length, [inspections]);
 
   return (
-    <Screen title="Inspections" subtitle={`${inspections.length} inspections in the workspace.`}>
+    <Screen title="Inspections" subtitle={`${inspections.length} inspections`}>
       <Card>
         <Text style={styles.cardTitle}>Inspection queue</Text>
         <Text style={styles.cardBody}>Open an inspection to continue capture, update property details, or move toward final review.</Text>
@@ -65,10 +69,22 @@ export default function InspectionsScreen() {
         </View>
       </Card>
 
-      {error ? <Notice>{error}</Notice> : null}
+      {error ? (
+        <Card>
+          <Text style={styles.cardTitle}>Backend connection</Text>
+          <Text style={styles.cardBody}>{error}</Text>
+          <View style={styles.connectionMeta}>
+            <Text style={styles.connectionMetaLabel}>Active API base URL</Text>
+            <Text style={styles.connectionMetaValue}>{apiBaseUrl}</Text>
+          </View>
+          <View style={styles.connectionActions}>
+            <Button label="Retry" onPress={() => setRetryNonce((current) => current + 1)} variant="secondary" />
+          </View>
+        </Card>
+      ) : null}
       {loading ? <LoadingRow label="Loading inspections" /> : null}
 
-      {inspections.length === 0 && !loading ? (
+      {inspections.length === 0 && !loading && !error ? (
         <Card>
           <EmptyState
             action={{label: 'New inspection', onPress: () => router.push('/new-inspection')}}
@@ -134,6 +150,27 @@ const styles = StyleSheet.create({
   summaryLabel: {
     ...typography.supporting,
     color: colours.textSecondary,
+  },
+  connectionMeta: {
+    marginTop: spacing.compactGap,
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: borders.subtle,
+    backgroundColor: surfaces.muted,
+    padding: spacing.inputPaddingY,
+    gap: 4,
+  },
+  connectionMetaLabel: {
+    ...typography.supporting,
+    color: colours.textSecondary,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  connectionMetaValue: {
+    ...typography.body,
+    color: colours.textPrimary,
+  },
+  connectionActions: {
+    marginTop: spacing.compactGap,
   },
   inspectionCard: {
     borderRadius: radii.card,

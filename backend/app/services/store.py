@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from copy import deepcopy
-from datetime import datetime
-from itertools import cycle
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -30,7 +31,7 @@ from app.schemas.domain import (
     UpdateSectionsRequest,
     UpdateTemplateRequest,
 )
-from app.services.ai import AIProvider
+from app.services.ai import AIProvider, AIProviderError
 from app.services.reports import ReportService
 from app.services.templates import TemplateService
 
@@ -85,7 +86,6 @@ class InspectionStore:
         self._templates = templates
         self._reports = report_service
         self._db_path = db_path
-        self._conditions = cycle(["good", "fair", "good", "poor"])
 
     def list_templates(self) -> list[TemplateSummary]:
         built_in = self._templates.list_templates()
@@ -113,7 +113,7 @@ class InspectionStore:
     def create_template(self, payload: CreateTemplateRequest) -> TemplateSchema:
         template_key = self._generate_template_key(payload.name, payload.property_type)
         template = self._build_custom_template(payload, template_key=template_key)
-        now = datetime.utcnow().isoformat()
+        now = self._utcnow().isoformat()
 
         with self._connect() as connection:
             connection.execute(
@@ -148,7 +148,7 @@ class InspectionStore:
                     SET payload_json = ?, updated_at = ?
                     WHERE template_key = ?
                     """,
-                    (self._serialize_model(updated), datetime.utcnow().isoformat(), template_key),
+                    (self._serialize_model(updated), self._utcnow().isoformat(), template_key),
                 )
                 connection.commit()
                 return updated
@@ -193,7 +193,7 @@ class InspectionStore:
             postcode=payload.postcode,
             landlord_name=payload.landlord_name,
             tenant_names=payload.tenant_names,
-            created_at=datetime.utcnow(),
+            created_at=self._utcnow(),
             inspection_date=payload.inspection_date,
             rooms=rooms,
             sections=InspectionSections(),
@@ -220,6 +220,7 @@ class InspectionStore:
         *,
         ai_provider: AIProvider,
         item_id: str | None = None,
+        photo_url: str | None = None,
     ) -> AnalysisSuggestion:
         inspection = self.get_inspection(inspection_id)
         room = self._get_room(inspection, room_id)
@@ -242,20 +243,29 @@ class InspectionStore:
             display_order=0,
             condition_options=["good"],
         )
-        condition = next(self._conditions)
-        suggestion = AnalysisSuggestion(
-            suggested_item_id=item.id,
-            suggested_item_name=item.name,
-            suggested_item_key=item.key,
-            condition=condition,  # type: ignore[arg-type]
-            confidence="high" if condition in {"good", "fair"} else "medium",
-            description=ai_provider.describe_images(
+        try:
+            assessment = ai_provider.describe_images(
                 file_name=file_name,
                 room_name=room.name,
                 item_name=item.name,
                 ai_hints=template_item.ai_hints,
                 property_address=inspection.property_address,
-            ),
+                image_url=photo_url,
+            )
+        except AIProviderError as exc:
+            self._raise_ai_http_error(exc)
+        if assessment.condition == "na":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="AI could not assess the uploaded photo clearly enough. Review it manually.",
+            )
+        suggestion = AnalysisSuggestion(
+            suggested_item_id=item.id,
+            suggested_item_name=item.name,
+            suggested_item_key=item.key,
+            condition=assessment.condition,
+            confidence=assessment.confidence,
+            description=assessment.description,
             photo_name=file_name,
         )
         return suggestion
@@ -306,8 +316,11 @@ class InspectionStore:
         for item in room.items:
             if item.is_confirmed:
                 continue
-            item.condition = "fair"
-            item.description = f"{item.name} was identified during the room scan and should be reviewed before final sign-off."
+            item.condition = "good"
+            item.description = (
+                f"{item.name} was identified during the room scan and appears serviceable from the limited walkthrough evidence. "
+                "Confirm manually before final sign-off."
+            )
             item.source = "video_ai"
             item.ai_confidence = "medium"
         self._save_inspection(inspection)
@@ -335,7 +348,7 @@ class InspectionStore:
 
         inspection.is_archived = True
         if inspection.archived_at is None:
-            inspection.archived_at = datetime.utcnow()
+            inspection.archived_at = self._utcnow()
         self._save_inspection(inspection)
         return inspection
 
@@ -357,15 +370,31 @@ class InspectionStore:
         inspection.status = "processing"
         inspection.is_archived = False
         inspection.archived_at = None
-        inspection.report_url = self._reports.generate(inspection, ai_provider)
+        try:
+            inspection.report_url = self._reports.generate(inspection, ai_provider)
+        except AIProviderError as exc:
+            self._raise_ai_http_error(exc)
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to write the generated report file.",
+            ) from exc
         inspection.status = "completed"
         self._save_inspection(inspection)
         return inspection
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self._db_path)
         connection.row_factory = sqlite3.Row
-        return connection
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
     def _save_inspection(self, inspection: InspectionRecord) -> None:
         with self._connect() as connection:
@@ -591,3 +620,9 @@ class InspectionStore:
 
     def _new_id(self, prefix: str) -> str:
         return f"{prefix}_{uuid4().hex[:8]}"
+
+    def _raise_ai_http_error(self, exc: AIProviderError) -> None:
+        raise HTTPException(status_code=exc.status_code, detail=exc.public_detail) from exc
+
+    def _utcnow(self) -> datetime:
+        return datetime.now(UTC).replace(tzinfo=None)

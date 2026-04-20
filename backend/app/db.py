@@ -11,7 +11,8 @@ SCHEMA_VERSION = 1
 def init_db(db_path: Path = DATABASE_PATH) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with sqlite3.connect(db_path) as connection:
+    connection = sqlite3.connect(db_path)
+    try:
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS schema_version (
@@ -46,3 +47,6 @@ def init_db(db_path: Path = DATABASE_PATH) -> None:
             )
             """
         )
+        connection.commit()
+    finally:
+        connection.close()

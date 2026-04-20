@@ -3,7 +3,7 @@ from __future__ import annotations
 from groq import Groq
 
 from app.schemas.domain import InspectionRecord
-from app.services.ai.base import AIProvider
+from app.services.ai.base import AIProvider, ImageAssessment
 
 
 _NOT_ACTIVE_MESSAGE = "GroqProvider not active — set AI_PROVIDER=groq and add GROQ_API_KEY to enable"
@@ -28,7 +28,8 @@ class GroqProvider(AIProvider):
         item_name: str,
         ai_hints: list[str],
         property_address: str,
-    ) -> str:
+        image_url: str | None = None,
+    ) -> ImageAssessment:
         # Future implementation pattern:
         # client = Groq(api_key=os.environ["GROQ_API_KEY"])
         # response = client.chat.completions.create(
@@ -37,7 +38,7 @@ class GroqProvider(AIProvider):
         # )
         # NOTE: llama-3.1-8b-instant is text-only and must not be used for image inputs.
         # return response.choices[0].message.content
-        _ = (Groq, file_name, room_name, item_name, ai_hints, property_address)
+        _ = (Groq, file_name, room_name, item_name, ai_hints, property_address, image_url)
         raise NotImplementedError(_NOT_ACTIVE_MESSAGE)
 
     def generate_report(self, *, inspection: InspectionRecord) -> str:

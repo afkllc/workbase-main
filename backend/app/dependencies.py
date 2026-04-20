@@ -1,10 +1,13 @@
-from functools import lru_cache
-import warnings
+from fastapi import HTTPException, Request
 
-from fastapi import Request
-
-from app.config import AI_PROVIDER
-from app.services.ai import AIProvider, MockProvider
+from app.config import (
+    get_ai_provider_name,
+    get_verba_api_base_url,
+    get_verba_api_key,
+    get_verba_capture_character,
+    get_verba_report_character,
+)
+from app.services.ai import AIProvider, AIProviderConfigurationError, AIProviderError, MockProvider, VerbaProvider
 from app.services.store import InspectionStore
 
 
@@ -12,15 +15,42 @@ def get_store(request: Request) -> InspectionStore:
     return request.app.state.store
 
 
-@lru_cache
-def _provider_factory() -> AIProvider:
-    if AI_PROVIDER != "mock":
-        warnings.warn(
-            f"AI_PROVIDER={AI_PROVIDER!r} is not supported in this MVP build. Falling back to the mock provider.",
-            stacklevel=2,
+def _build_verba_provider() -> AIProvider:
+    api_key = get_verba_api_key()
+    capture_character = get_verba_capture_character()
+    report_character = get_verba_report_character()
+    missing = [
+        name
+        for name, value in (
+            ("VERBA_API_KEY", api_key),
+            ("VERBA_CAPTURE_CHARACTER", capture_character),
+            ("VERBA_REPORT_CHARACTER", report_character),
         )
-    return MockProvider()
+        if not value
+    ]
+    if missing:
+        raise AIProviderConfigurationError(
+            f"AI_PROVIDER='verba' requires these backend env vars: {', '.join(missing)}"
+        )
+    return VerbaProvider(
+        api_base_url=get_verba_api_base_url(),
+        api_key=api_key,
+        capture_character=capture_character,
+        report_character=report_character,
+    )
 
 
 def get_ai_provider() -> AIProvider:
-    return _provider_factory()
+    provider_name = get_ai_provider_name()
+    try:
+        if provider_name == "mock":
+            return MockProvider()
+
+        if provider_name == "verba":
+            return _build_verba_provider()
+
+        raise AIProviderConfigurationError(
+            f"Unsupported AI_PROVIDER={provider_name!r}. Use 'mock' or 'verba'."
+        )
+    except AIProviderError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.public_detail) from exc
